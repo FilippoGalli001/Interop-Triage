@@ -1,0 +1,21 @@
+# iris-mcp-server configuration for the triage MCP Server (/mcp/triage).
+# Started by the MCP client inside the container, over stdio:
+#   docker exec -i iris-triage /usr/irissys/bin/iris-mcp-server --config=/home/irisowner/dev/mcp/config.toml run
+# Demo credentials of the container. For a real deployment use @{env:...} or @{wallet:...} references.
+
+[mcp]
+transport = "stdio"
+
+[[iris]]
+name   = "triage"
+# Layer 1: iris-mcp-server to IRIS, with the web gateway user.
+server = { host = "localhost", port = 1972, username = "CSPSystem", password = "SYS" }
+pool   = { min = 1, max = 3 }
+# Layer 2: the user the tools run as; approvals are recorded as "<user> via MCP".
+endpoints = [{ path = "/mcp/triage", username = "_SYSTEM", password = "SYS" }]
+
+[logging]
+# With stdio the logs must go to a file, not to the protocol stream.
+level  = "info"
+output = "file"
+file   = "/tmp/iris-mcp.log"

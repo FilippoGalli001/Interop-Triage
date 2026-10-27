@@ -1,0 +1,11 @@
+    zn "%SYS"
+    // Demo convenience: the default passwords do not expire. Remove for real deployments.
+    do ##class(Security.Users).UnExpireUserPasswords("*")
+
+    zn "TRIAGE"
+    set sc = $system.OBJ.LoadDir("/home/irisowner/dev/src", "ck", .errors, 1)
+    // Fail the image build on any compile error.
+    if 'sc { do $system.Status.DisplayError(sc)  do $system.Process.Terminate($job, 1) }
+    set sc = ##class(Triage.Setup).Install()
+    if 'sc { do $system.Status.DisplayError(sc)  do $system.Process.Terminate($job, 1) }
+    halt

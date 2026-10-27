@@ -1,0 +1,6 @@
+[Actions]
+CreateResource:Name=%DB_TRIAGE_DATA,Description="TRIAGE_DATA database resource"
+CreateDatabase:Name=TRIAGE_DATA,Directory=/usr/irissys/mgr/TRIAGE_DATA,Resource=%DB_TRIAGE_DATA
+CreateResource:Name=%DB_TRIAGE_CODE,Description="TRIAGE_CODE database resource"
+CreateDatabase:Name=TRIAGE_CODE,Directory=/usr/irissys/mgr/TRIAGE_CODE,Resource=%DB_TRIAGE_CODE
+CreateNamespace:Name=TRIAGE,Globals=TRIAGE_DATA,Routines=TRIAGE_CODE,Interop=1

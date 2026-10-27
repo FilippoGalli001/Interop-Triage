@@ -1,0 +1,24 @@
+services:
+  iris:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # The name the EAP archive loads with; set IRIS_IMAGE in .env if yours differs.
+        IMAGE: ${IRIS_IMAGE:-docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2026.3.0AI.154.0}
+    container_name: iris-triage
+    # Optional: without .env (or without a key in it) the agent runs in replay mode.
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+    ports:
+      - "1972:1972"
+      - "52773:52773"
+    volumes:
+      # Mounted for development: reload with Triage.Setup.Reload() without rebuilding.
+      - ./src:/home/irisowner/dev/src
+      - ./runbooks:/home/irisowner/dev/runbooks
+      - ./web:/home/irisowner/dev/web
+      - ./recordings:/home/irisowner/dev/recordings
+      - ./mcp:/home/irisowner/dev/mcp

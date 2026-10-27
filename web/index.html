@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interop Triage</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2330; --muted: #5d6779; --line: #e2e6ec;
+  --accent: #2f5bd3; --accent-ink: #ffffff;
+  --ok: #1f7a4d; --ok-bg: #e3f4ea; --warn: #8a5a00; --warn-bg: #fdf0d5; --bad: #a3262a; --bad-bg: #fbe4e4;
+  --info: #22558f; --info-bg: #e2edf9; --none: #4f5868; --none-bg: #eceff3; --teal: #126b6b; --teal-bg: #dff2f1;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --panel: #1a1f27; --ink: #e5e9f0; --muted: #9aa4b5; --line: #2b323d;
+    --accent: #6d93f2; --accent-ink: #0d1117;
+    --ok: #6cd39c; --ok-bg: #173526; --warn: #f0c062; --warn-bg: #3a2d10; --bad: #f08a8d; --bad-bg: #3d1a1c;
+    --info: #8ab8ef; --info-bg: #182c45; --none: #b3bcca; --none-bg: #262c36; --teal: #6fd0cc; --teal-bg: #133432;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+h1 { font-size: 18px; margin: 0; }
+.sub { color: var(--muted); font-size: 13px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 7px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.good { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+button.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+main { padding: 16px 24px 32px; max-width: 1500px; margin: 0 auto; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.tile .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .k { color: var(--muted); font-size: 12px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } header, main { padding-left: 16px; padding-right: 16px; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.panel h2 { font-size: 14px; margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--bg); }
+tbody tr.sel { background: var(--info-bg); }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.s-RESENT { color: var(--ok); background: var(--ok-bg); }
+.s-SCHEDULED_RETRY { color: var(--info); background: var(--info-bg); }
+.s-PENDING_APPROVAL { color: var(--warn); background: var(--warn-bg); }
+.s-ESCALATED { color: var(--bad); background: var(--bad-bg); }
+.s-RESOLVED { color: var(--teal); background: var(--teal-bg); }
+.s-DISCARDED, .s-REJECTED, .s-DECIDED, .s-NEW { color: var(--none); background: var(--none-bg); }
+.s-ANALYZING { color: var(--info); background: var(--info-bg); }
+.s-ANALYZING::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; vertical-align: -1px; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .s-ANALYZING::before { animation: none; } }
+.ok { color: var(--ok); } .ko { color: var(--bad); }
+.tag { font-size: 11px; color: var(--muted); }
+.detail { padding: 14px; }
+.detail h3 { font-size: 15px; margin: 0 0 4px; }
+.detail h4 { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .03em; margin: 16px 0 6px; }
+.empty { color: var(--muted); padding: 24px 14px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-family: var(--mono); font-size: 12.5px; }
+.kv .old { text-decoration: line-through; color: var(--bad); }
+.kv .new { color: var(--ok); font-weight: 600; }
+.box { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: var(--bg); }
+.mono { font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-word; }
+.call { border-top: 1px solid var(--line); padding: 8px 0; }
+.call:first-child { border-top: 0; }
+.call summary { cursor: pointer; }
+.kv input { font: inherit; width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+textarea { width: 100%; min-height: 56px; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.err { color: var(--bad); }
+.banner { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+.banner[hidden] { display: none; }
+a { color: var(--accent); }
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.overlay[hidden] { display: none; }
+.loginbox { width: 100%; max-width: 380px; }
+.loginbox label { display: block; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.loginbox input { display: block; width: 100%; margin-top: 4px; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Interop Triage</h1>
+    <div class="sub" id="model">AI Hub agent for failed Interoperability messages</div>
+  </div>
+  <div class="actions">
+    <button class="primary" id="run" title="Resets the demo data and sends all scenarios (about 10 agent runs)">Run demo</button>
+    <button id="quick" title="Resets the demo data and sends 3 scenarios: an approval, an automatic fix and a delayed retry. Fits a free LLM tier.">Quick demo</button>
+    <button id="followup" title="Sends similar failures: the agent should cite the operators' notes">Run follow-up</button>
+    <a class="btn" href="/csp/triage/EnsPortal.ProductionConfig.zen" target="_blank" rel="noopener">Production</a>
+    <a class="btn" href="/csp/triage/EnsPortal.MessageViewer.zen" target="_blank" rel="noopener">Messages</a>
+    <button id="signout">Sign out</button>
+    <span class="sub" id="status"></span>
+  </div>
+</header>
+<div class="overlay" id="login" hidden>
+  <form class="panel loginbox" id="loginForm">
+    <h2>Sign in with your IRIS user</h2>
+    <div class="detail">
+      <p class="sub">Approvals and resolutions are recorded under this user. Demo container: _SYSTEM / SYS.</p>
+      <label>User <input id="user" autocomplete="username" required></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password" required></label>
+      <div class="row"><button class="primary" type="submit">Sign in</button><button type="button" id="demoUser">Use the demo user</button><span class="err" id="loginMsg"></span></div>
+    </div>
+  </form>
+</div>
+<main>
+  <div class="banner" id="replayBanner" hidden></div>
+  <section class="tiles" id="tiles"></section>
+  <section class="layout">
+    <div class="panel">
+      <h2>Incidents</h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>#</th><th>Time</th><th>Message</th><th>Error</th><th>Agent</th><th>Status</th><th>Tokens</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="noRows" hidden>No incidents yet. Press <b>Run demo</b>: the first decisions appear within a minute.</div>
+    </div>
+    <div class="panel" id="detail"><div class="empty">Select an incident to see the agent's reasoning, the tool calls and the actions.</div></div>
+  </section>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let selected = null;
+
+// Every value from the API is inserted as text: message payloads come from external systems.
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") node.className = v; else if (k === "on") node.addEventListener("click", v); else node.setAttribute(k, v);
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === "") continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+// What happened to a resent message, read from its Interoperability header.
+const outcomeTag = (outcome) => !outcome ? "" :
+  el("div", { class: "tag " + (outcome === "SUCCEEDED" ? "ok" : outcome === "FAILED_AGAIN" ? "ko" : "") },
+    outcome === "SUCCEEDED" ? "delivered" : outcome === "FAILED_AGAIN" ? "failed again" : "in flight");
+const badge = (status) => el("span", { class: "badge s-" + status }, status.replace("_", " ").toLowerCase());
+const parse = (text) => { try { return JSON.parse(text || "{}"); } catch { return {}; } };
+const shortTime = (ts) => (ts || "").slice(11, 19);
+const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+
+// The API uses the IRIS credentials of the operator, kept for this browser tab only.
+let auth = null;
+try { auth = sessionStorage.getItem("triageAuth"); } catch {}
+
+async function api(path, options) {
+  if (!auth) { showLogin(); throw new Error("not signed in"); }
+  const opts = Object.assign({}, options || {});
+  opts.headers = Object.assign({ Authorization: "Basic " + auth }, opts.headers || {});
+  opts.cache = "no-store";
+  const url = "/triage/api" + path;
+  const response = await fetch(url, opts);
+  if (response.status === 401) { auth = null; showLogin("Wrong user name or password."); throw new Error("not signed in"); }
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((opts.method || "GET") + " " + url + " -> HTTP " + response.status + ": " + (body.error || body.summary || response.statusText));
+  return body;
+}
+
+function showLogin(message) {
+  $("login").hidden = false;
+  $("loginMsg").textContent = message || "";
+  $("user").focus();
+}
+
+$("demoUser").addEventListener("click", () => { $("user").value = "_SYSTEM"; $("password").value = "SYS"; $("loginForm").requestSubmit(); });
+
+$("loginForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  auth = btoa(unescape(encodeURIComponent($("user").value + ":" + $("password").value)));
+  try { sessionStorage.setItem("triageAuth", auth); } catch {}
+  $("login").hidden = true;
+  refresh();
+});
+
+function messageSummary(inc) {
+  const body = parse(inc.messageBody);
+  const id = body.OrderId || body.Sku || body.Id || "";
+  return [el("div", {}, id || (inc.messageClass || "").split(".").pop()), el("div", { class: "tag" }, inc.sourceConfigName)];
+}
+
+function agentSummary(inc) {
+  if (!inc.agentAction) return el("span", { class: "tag" }, inc.agentError ? "error" : "deciding\u2026");
+  const extra = [];
+  if (inc.agentFixType) extra.push(inc.agentFixType);
+  if (inc.retryDelay) extra.push("after " + inc.retryDelay + " s");
+  if (inc.leaderIncidentId) extra.push("reused #" + inc.leaderIncidentId);
+  if (inc.replayOf) extra.push("replayed");
+  return [el("div", {}, inc.agentAction.replace(/_/g, " ").toLowerCase(), " ", el("span", { class: "tag" }, inc.agentConfidence !== "" ? "(" + inc.agentConfidence + ")" : "")),
+          el("div", { class: "tag" }, extra.join(" \u00b7 "))];
+}
+
+function errorSummary(text) {
+  const t = (text || "").replace(/^ERROR <Ens>ErrGeneral: /, "").replace(/^ERROR #5001: /, "");
+  return t.length > 90 ? t.slice(0, 90) + "\u2026" : t;
+}
+
+function renderTiles(s) {
+  const tiles = [
+    ["Incidents", fmt(s.incidents)],
+    ["Handled automatically", fmt(s.automatic)],
+    ["Waiting for approval", fmt(s.pending)],
+    ["Escalated (open)", fmt(s.escalated)],
+    ["Reviewed by people", fmt(s.reviewed)],
+    ["LLM runs", fmt(s.agentRuns)],
+    ["LLM runs saved", fmt(s.reusedDecisions)],
+    ["Tokens in / out", fmt(s.promptTokens) + " / " + fmt(s.completionTokens)],
+    ["Avg decision time", s.avgDecisionMs ? (s.avgDecisionMs / 1000).toFixed(1) + " s" : "\u2013"],
+  ];
+  if (s.estimatedCost !== undefined) tiles.push(["Estimated cost", "$" + s.estimatedCost]);
+  $("tiles").replaceChildren(...tiles.map(([k, v]) => el("div", { class: "tile" }, el("div", { class: "v" }, v), el("div", { class: "k" }, k))));
+  const replay = s.mode === "replay";
+  $("model").textContent = "AI Hub agent \u00b7 " + (replay ? "replay mode" : (s.provider || "?") + " \u00b7 " + (s.model || "?"));
+  $("replayBanner").hidden = !replay;
+  $("replayBanner").textContent = "Replay mode: no LLM API key is configured. The agent repeats the tool calls an LLM (" + (s.recordedModel || "none recorded") +
+    ") made for the same failures in verified live runs (" + s.recordings + " recordings). Everything else runs for real: the tools on the current data, " +
+    "the policies, the rules, the delayed retries and your approvals. Set LLM_PROVIDER, LLM_MODEL and LLM_API_KEY in .env for live decisions.";
+}
+
+function renderRows(list) {
+  $("noRows").hidden = list.length > 0;
+  $("rows").replaceChildren(...list.map((inc) => {
+    const tr = el("tr", { class: inc.id === selected ? "sel" : "", on: () => select(inc.id) },
+      el("td", { class: "num" }, inc.id, inc.attemptNumber > 1 ? el("div", { class: "tag" }, "attempt " + inc.attemptNumber) : ""),
+      el("td", { class: "num" }, shortTime(inc.createdAt)),
+      el("td", {}, messageSummary(inc)),
+      el("td", {}, errorSummary(inc.alertText)),
+      el("td", {}, agentSummary(inc)),
+      el("td", {}, badge(inc.status), outcomeTag(inc.resendOutcome)),
+      el("td", { class: "num" }, inc.promptTokens ? fmt(inc.promptTokens + inc.completionTokens) : "\u2013"));
+    return tr;
+  }));
+}
+
+// The patch shown is the operator's when they changed the agent's before approving.
+function bodyWithPatch(inc) {
+  const body = parse(inc.messageBody), proposed = parse(inc.agentPatch), patch = inc.operatorPatch ? parse(inc.operatorPatch) : proposed;
+  const rows = [];
+  for (const [k, v] of Object.entries(body)) {
+    rows.push(el("div", {}, k));
+    rows.push(k in patch ? el("div", {}, el("span", { class: "old" }, String(v)), "  \u2192  ", el("span", { class: "new" }, String(patch[k])),
+      inc.operatorPatch && proposed[k] !== patch[k] ? el("span", { class: "tag" }, "  set by the operator; the agent proposed " + (k in proposed ? String(proposed[k]) : "no change")) : "")
+      : el("div", {}, String(v)));
+  }
+  return el("div", { class: "kv box" }, rows);
+}
+
+// One input per field of the agent's patch, prefilled with the proposed value.
+function patchEditor(inc) {
+  const proposed = parse(inc.agentPatch);
+  const inputs = Object.entries(proposed).map(([k, v]) => [k, v, el("input", { value: String(v), "aria-label": k })]);
+  const changed = () => {
+    const patch = {};
+    let differs = false;
+    for (const [k, v, input] of inputs) {
+      patch[k] = typeof v === "number" && input.value.trim() !== "" && !isNaN(input.value) ? Number(input.value) : input.value;
+      if (patch[k] !== v) differs = true;
+    }
+    return differs ? patch : null;
+  };
+  const node = el("div", { class: "kv box" }, inputs.map(([k, , input]) => [el("div", {}, k), input]));
+  return { node, inputs: inputs.map(([, , input]) => input), changed };
+}
+
+function reviewForm(inc) {
+  const note = el("textarea", { placeholder: inc.status === "ESCALATED" ? "What did you do? The note becomes part of the agent's memory." : "Optional note (kept in the agent's memory; required if you change the patch)" });
+  const msg = el("span", { class: "err" });
+  const editor = inc.status === "PENDING_APPROVAL" && inc.agentAction === "FIX_AND_RESEND" ? patchEditor(inc) : null;
+  const send = (path, button) => async () => {
+    button.disabled = true;
+    const body = { note: note.value };
+    const patch = path === "approve" && editor ? editor.changed() : null;
+    if (patch) body.patch = patch;
+    try { await api("/incidents/" + inc.id + "/" + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); setTimeout(refresh, 800); }
+    catch (e) { msg.textContent = e.message; button.disabled = false; }
+  };
+  if (inc.status === "PENDING_APPROVAL") {
+    const label = "Approve " + inc.agentAction.replace(/_/g, " ").toLowerCase();
+    const approve = el("button", { class: "good" }, label);
+    const reject = el("button", { class: "bad" }, "Reject");
+    approve.addEventListener("click", send("approve", approve));
+    reject.addEventListener("click", send("reject", reject));
+    if (editor) {
+      editor.inputs.forEach((input) => input.addEventListener("input", () => { approve.textContent = editor.changed() ? "Approve with my changes" : label; }));
+    }
+    return [el("h4", {}, "Your decision"),
+      editor ? [el("div", { class: "tag" }, "Patch to apply: change a value if the agent got it wrong. The same rules check your values."), editor.node] : "",
+      note, el("div", { class: "row" }, approve, reject, msg)];
+  }
+  if (inc.status === "ESCALATED") {
+    const resolve = el("button", { class: "good" }, "Mark as resolved");
+    resolve.addEventListener("click", send("resolve", resolve));
+    return [el("h4", {}, "Resolve"), note, el("div", { class: "row" }, resolve, msg)];
+  }
+  return [];
+}
+
+function renderDetail(inc) {
+  const body = parse(inc.messageBody);
+  const trace = "/csp/triage/EnsPortal.VisualTrace.zen?SESSIONID=" + encodeURIComponent(inc.sessionId);
+  const parts = [
+    el("h3", {}, "#" + inc.id + " \u00b7 " + (body.OrderId || body.Sku || inc.messageClass) + " "), badge(inc.status),
+    el("div", { class: "row" }, el("a", { href: trace, target: "_blank", rel: "noopener" }, "Visual Trace of session " + inc.sessionId),
+      el("span", { class: "tag" }, "(the Management Portal has its own sign-in: demo _SYSTEM / SYS)")),
+    el("div", { class: "tag" }, inc.sourceConfigName + " \u00b7 attempt " + inc.attemptNumber),
+    el("h4", {}, "Error"), el("div", { class: "box mono" }, inc.alertText),
+    el("h4", {}, inc.agentPatch && inc.agentPatch !== "{}" ? "Message and proposed patch" : "Message"), bodyWithPatch(inc),
+    el("h4", {}, "Agent proposal"),
+    el("div", { class: "box" },
+      el("div", {}, el("b", {}, (inc.agentAction || "none").replace(/_/g, " ")), inc.agentConfidence !== "" ? "  \u00b7 confidence " + inc.agentConfidence : "",
+        inc.agentFixType ? "  \u00b7 " + inc.agentFixType : "", inc.agentRetryAfter ? "  \u00b7 retry after " + inc.agentRetryAfter + " s" : ""),
+      inc.leaderIncidentId ? el("div", { class: "tag" }, "Decision reused from incident #" + inc.leaderIncidentId + ": no LLM call") : "",
+      inc.replay ? el("div", { class: "tag" }, "Replayed: the tool calls " + inc.replay.model + " made for this failure on " + inc.replay.recordedAt +
+        " (" + fmt(inc.replay.promptTokens) + " in / " + fmt(inc.replay.completionTokens) + " out tokens then). The tools ran again now.") : "",
+      el("p", {}, inc.agentReason),
+      inc.upstreamRecommendation ? [el("div", { class: "tag" }, "Fix the cause"), el("p", {}, inc.upstreamRecommendation)] : "",
+      inc.agentError ? el("p", { class: "err" }, inc.agentError) : ""),
+    el("h4", {}, "What the rules did"),
+    el("div", { class: "box" }, "Executed: ", el("b", {}, inc.finalAction || "\u2014"), inc.retryDelay ? " (after " + inc.retryDelay + " s)" : "",
+      inc.resendOutcome ? el("div", {}, "Resent message: ", outcomeTag(inc.resendOutcome)) : "",
+      inc.guardrailNote ? el("div", { class: "tag" }, inc.guardrailNote) : ""),
+    inc.reviewedBy ? [el("h4", {}, "Review"), el("div", { class: "box" }, inc.reviewedBy + " \u00b7 " + inc.reviewedAt, el("p", {}, inc.reviewNote))] : "",
+    reviewForm(inc),
+    el("h4", {}, "Tool calls (" + (inc.toolCalls || []).length + ")" + (inc.promptTokens ? " \u00b7 " + fmt(inc.promptTokens) + " in / " + fmt(inc.completionTokens) + " out tokens \u00b7 " + (inc.agentDurationMs / 1000).toFixed(1) + " s" : "")),
+    el("div", {}, (inc.toolCalls || []).map((c) => el("details", { class: "call" },
+      el("summary", {}, el("b", {}, c.tool), " ", el("span", { class: "tag" }, c.ms + " ms" + (c.success ? "" : " \u00b7 failed"))),
+      el("div", { class: "tag" }, "arguments"), el("div", { class: "mono" }, c.arguments),
+      el("div", { class: "tag" }, "result"), el("div", { class: "mono" }, c.error || c.result)))),
+  ];
+  $("detail").replaceChildren(el("div", { class: "detail" }, parts));
+}
+
+async function select(id) {
+  selected = id;
+  try { renderDetail(await api("/incidents/" + id)); } catch (e) { $("detail").replaceChildren(el("div", { class: "empty err" }, e.message)); }
+  document.querySelectorAll("#rows tr").forEach((tr) => tr.classList.toggle("sel", tr.firstChild.textContent.startsWith(String(id))));
+}
+
+async function refresh() {
+  try {
+    const [stats, list] = await Promise.all([api("/stats"), api("/incidents")]);
+    renderTiles(stats); renderRows(list);
+    // Do not redraw the detail while the operator is typing a note or a patch value.
+    if (selected && !(document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName))) {
+      renderDetail(await api("/incidents/" + selected));
+    }
+    $("status").textContent = "updated " + new Date().toLocaleTimeString();
+  } catch (e) { $("status").textContent = "API error: " + e.message; }
+}
+
+async function demo(act, button) {
+  button.disabled = true;
+  try { await api("/demo/" + act, { method: "POST" }); if (act === "run") { selected = null; $("detail").replaceChildren(el("div", { class: "empty" }, "Demo started: orders are being sent. Incidents appear as the agent decides.")); } }
+  catch (e) { $("status").textContent = e.message; }
+  setTimeout(() => { button.disabled = false; refresh(); }, 3000);
+}
+$("signout").addEventListener("click", () => { auth = null; try { sessionStorage.removeItem("triageAuth"); } catch {} showLogin(); });
+$("run").addEventListener("click", () => demo("run", $("run")));
+$("quick").addEventListener("click", () => demo("quick", $("quick")));
+$("followup").addEventListener("click", () => demo("followup", $("followup")));
+if (auth) refresh(); else showLogin();
+setInterval(() => { if (auth) refresh(); }, 2000);
+</script>
+</body>
+</html>

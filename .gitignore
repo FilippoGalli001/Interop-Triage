@@ -1,0 +1,13 @@
+.env
+*.log
+/data/
+/docs-cache/
+*.tar.gz
+.tools/
+
+# Working notes kept locally, not part of the entry
+DEVLOG.md
+docs/*
+!docs/ARCHITECTURE.md
+!docs/AIHUB-FEEDBACK.md
+.iris-agentic-dev.toml
