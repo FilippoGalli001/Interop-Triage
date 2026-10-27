@@ -202,7 +202,8 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode
-web/index.html         Dashboard served at /triage/index.html
+web/                   Dashboard served at /triage/index.html, with its favicon
+assets/                Logo used by the README
 mcp/                   config.toml for iris-mcp-server, stdio_proxy.py, smoke_test.py
 Dockerfile             Image on top of the AI Hub build 154 image (IRIS_IMAGE)
 docker-compose.yml     Container iris-triage, with the optional .env

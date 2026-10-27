@@ -1,4 +1,9 @@
-# Interop Triage
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo.svg" alt="Interop Triage" width="420">
+  </picture>
+</p>
 
 **The AI proposes, the code decides, people approve what is risky.**
 
