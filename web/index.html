@@ -172,7 +172,11 @@ async function api(path, options) {
   const response = await fetch(url, opts);
   if (response.status === 401) { auth = null; showLogin("Wrong user name or password."); throw new Error("not signed in"); }
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error((opts.method || "GET") + " " + url + " -> HTTP " + response.status + ": " + (body.error || body.summary || response.statusText));
+  if (!response.ok) {
+    const error = new Error((opts.method || "GET") + " " + url + " -> HTTP " + response.status + ": " + (body.error || body.summary || response.statusText));
+    error.reason = String(body.error || "").replace(/^ERRORE? #\d+: /, "");
+    throw error;
+  }
   return body;
 }
 
@@ -281,17 +285,21 @@ function patchEditor(inc) {
   return { node, inputs: inputs.map(([, , input]) => input), changed };
 }
 
+// The review form of the open incident: while it holds unsent input, the refresh does not redraw it.
+let form = null;
+
 function reviewForm(inc) {
   const note = el("textarea", { placeholder: inc.status === "ESCALATED" ? "What did you do? The note becomes part of the agent's memory." : "Optional note (kept in the agent's memory; required if you change the patch)" });
   const msg = el("span", { class: "err" });
   const editor = inc.status === "PENDING_APPROVAL" && inc.agentAction === "FIX_AND_RESEND" ? patchEditor(inc) : null;
+  form = { status: inc.status, dirty: () => note.value.trim() !== "" || !!(editor && editor.changed()) || msg.textContent !== "" };
   const send = (path, button) => async () => {
     button.disabled = true;
     const body = { note: note.value };
     const patch = path === "approve" && editor ? editor.changed() : null;
     if (patch) body.patch = patch;
-    try { await api("/incidents/" + inc.id + "/" + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); setTimeout(refresh, 800); }
-    catch (e) { msg.textContent = e.message; button.disabled = false; }
+    try { await api("/incidents/" + inc.id + "/" + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); form = null; setTimeout(refresh, 800); }
+    catch (e) { msg.textContent = e.reason || e.message; button.disabled = false; if (!note.value.trim()) note.focus(); }
   };
   if (inc.status === "PENDING_APPROVAL") {
     const label = "Approve " + inc.agentAction.replace(/_/g, " ").toLowerCase();
@@ -351,6 +359,7 @@ function renderDetail(inc) {
 
 async function select(id) {
   selected = id;
+  form = null;
   try { renderDetail(await api("/incidents/" + id)); } catch (e) { $("detail").replaceChildren(el("div", { class: "empty err" }, e.message)); }
   document.querySelectorAll("#rows tr").forEach((tr) => tr.classList.toggle("sel", tr.firstChild.textContent.startsWith(String(id))));
 }
@@ -359,9 +368,10 @@ async function refresh() {
   try {
     const [stats, list] = await Promise.all([api("/stats"), api("/incidents")]);
     renderTiles(stats); renderRows(list);
-    // Do not redraw the detail while the operator is typing a note or a patch value.
+    // Do not redraw the detail while the operator is typing, or has input not sent yet (unless the incident moved on).
     if (selected && !(document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName))) {
-      renderDetail(await api("/incidents/" + selected));
+      const inc = await api("/incidents/" + selected);
+      if (!(form && form.dirty() && form.status === inc.status)) renderDetail(inc);
     }
     $("status").textContent = "updated " + new Date().toLocaleTimeString();
   } catch (e) { $("status").textContent = "API error: " + e.message; }
