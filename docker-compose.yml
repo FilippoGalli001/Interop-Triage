@@ -14,7 +14,8 @@ services:
     restart: unless-stopped
     ports:
       - "1972:1972"
-      - "52773:52773"
+      # Web port on the host: set IRIS_WEB_PORT in .env if 52773 is taken.
+      - "${IRIS_WEB_PORT:-52773}:52773"
     volumes:
       # Mounted for development: reload with Triage.Setup.Reload() without rebuilding.
       - ./src:/home/irisowner/dev/src

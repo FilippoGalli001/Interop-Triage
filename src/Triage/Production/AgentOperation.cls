@@ -25,6 +25,12 @@ Method OnMessage(pRequest As Triage.Msg.TriageRequest, Output pResponse As Triag
     set pResponse.Reason = incident.AgentReason
     set pResponse.Confidence = incident.AgentConfidence
     set pResponse.Patch = incident.AgentPatch
+    set pResponse.Model = $select(incident.ReplayOf '= "": "replay of recording " _ incident.ReplayOf, 1: incident.Model)
+    set pResponse.PromptTokens = incident.PromptTokens
+    set pResponse.CompletionTokens = incident.CompletionTokens
+    set pResponse.ReasoningTokens = incident.ReasoningTokens
+    set pResponse.DurationMs = incident.AgentDurationMs
+    set pResponse.ToolCalls = ##class(Triage.Data.ToolCallLog).Trace(pRequest.IncidentId)
     $$$LOGINFO("Agent decision for incident " _ pRequest.IncidentId _ ": " _ incident.AgentAction _ " (" _ incident.AgentConfidence _ ", " _ incident.PromptTokens _ "+" _ incident.CompletionTokens _ " tokens)")
     quit $$$OK
 }

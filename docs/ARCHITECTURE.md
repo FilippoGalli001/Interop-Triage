@@ -9,6 +9,7 @@ The details behind the [README](../README.md).
 - [Knowledge and Operator Memory](#knowledge-and-operator-memory)
 - [How Replay Mode Stays Honest](#how-replay-mode-stays-honest)
 - [MCP Server](#mcp-server)
+- [Tracing the LLM Pipeline](#tracing-the-llm-pipeline)
 - [Dashboard](#dashboard)
 - [Measurements](#measurements)
 - [Tests](#tests)
@@ -123,6 +124,16 @@ Why a proxy: current Claude Code versions first send a `server/discover` probe f
 
 `mcp/config.toml` holds the container's demo credentials (`CSPSystem` for the gateway, `_SYSTEM` for IRIS); in a real deployment use `@{env:...}` or IRIS Wallet references.
 
+## Tracing the LLM Pipeline
+
+The project uses IRIS Interoperability as the tracing layer for its GenAI pipeline, as proposed by [Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689).
+
+- **One session per failure.** The failed message, the `Ens.AlertRequest`, the agent run (`Triage.AgentOperation`), the `Ens.Alarm` of a delayed retry, a human review (`Triage.ReviewService`) and the resent message are steps of the same Visual Trace session.
+- **The LLM run is a message.** The agent's response, `Triage.Msg.TriageDecision`, carries the decision (action, reason, confidence, patch) and the run behind it: model (or the recording, in replay mode), prompt, completion and reasoning tokens, duration, and the tool calls in order with their arguments and durations. The IRIS Vector Search queries the agent made (`search_runbooks`, `search_incidents`) appear there with their query text.
+- **Full detail in SQL.** The `%AI.Policy.Audit` subclass stores every tool call, with its result, in `Triage_Data.ToolCallLog`; the incident row holds the tokens and cost inputs. Both can be queried like any IRIS table, and the dashboard reads them.
+- **Nothing leaves IRIS.** Unlike an external tracing service, prompts, payloads, vectors and traces stay in the same instance, under the same security as the messages.
+- **The trace leads to an action.** From the incident, an operator approves, changes the patch, rejects or resolves, and that review becomes the next step of the same session.
+
 ## Dashboard
 
 `web/index.html` is a static page with no dependencies, backed by `Triage.API.REST` (`/triage/api`). It signs in with IRIS credentials and records the user on every review; payloads and error texts are rendered as text nodes, never as HTML.
@@ -149,7 +160,7 @@ With Gemini's free tier (20 requests a day per model) use **Quick demo**: a full
 
 ## Tests
 
-`Triage.Test.PolicyTest` has 76 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), error signatures, secret redaction, session isolation, replay mode, operator patches and the MCP note requirement.
+`Triage.Test.PolicyTest` has 79 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), the tool-call trace, error signatures, secret redaction, session isolation, replay mode, operator patches and the MCP note requirement.
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"
@@ -198,7 +209,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Service/             ReviewService (human reviews as steps of the production)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (76 assertions)
+  Test/PolicyTest.cls  %UnitTest suite (79 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode

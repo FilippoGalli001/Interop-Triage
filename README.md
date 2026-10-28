@@ -41,7 +41,7 @@ cp .env.example .env        # optional: put your key in LLM_API_KEY
 docker compose up -d --build
 ```
 
-The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy`. If `docker images` lists the IRIS image under another name, set `IRIS_IMAGE` in `.env`.
+The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy`. If `docker images` lists the IRIS image under another name, set `IRIS_IMAGE` in `.env`. If `localhost:52773` is not reachable while the container is healthy, the port is taken on the host (on Windows, Hyper-V reserves port ranges at startup, see `netsh interface ipv4 show excludedportrange protocol=tcp`): set `IRIS_WEB_PORT=8080` in `.env`, run `docker compose up -d`, and use that port in the URLs below.
 
 **Open** (user `_SYSTEM`, password `SYS`)
 
@@ -51,7 +51,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Production     | [EnsPortal.ProductionConfig.zen](http://localhost:52773/csp/triage/EnsPortal.ProductionConfig.zen?$NAMESPACE=TRIAGE) |
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
 
-**Check** the 76 `%UnitTest` assertions and the MCP server:
+**Check** the 79 `%UnitTest` assertions and the MCP server:
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"   # ends with All PASSED
@@ -129,7 +129,7 @@ flowchart TD
 - **Native retries first.** The operations keep their usual `RetryInterval` and `FailureTimeout`, so short blips never reach the agent. A longer outage leaves the queue after `FailureTimeout`, freeing the messages behind it, and the agent picks the delay from the evidence. A `Retry-After` from the target, in seconds or as an HTTP date (parsed with Embedded Python), is a minimum the rules enforce.
 - **Rules decide.** A proposal runs automatically only if its action is in `AutoActions`, its confidence reaches `MinConfidence`, and any patch is a `normalization` touching only `AutoFixFields`. Anything else waits for a person; unknown actions, invalid patches and protected fields (`OrderId`, `CustomerId`, `Sku`) are escalated. The rules check the fields, not just the model's own label: `gemini-2.5-flash` once called the date reordering a normalization, and it still went to approval.
 - **Memory of people's decisions.** Runbooks and reviewed incidents are two `%AI.RAG.KnowledgeBase`s on FastEmbed and IRIS Vector Search, inside the container. Only incidents reviewed by a person, with their note, are remembered; automatic decisions never are.
-- **Everything is traced.** An AI Hub audit policy logs every tool call, shown on the dashboard with its arguments; each incident links to its Visual Trace, where the agent call, the review and the retry are steps of one session.
+- **Everything is traced, inside IRIS.** Interoperability is the tracing layer for the LLM pipeline ([Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)): the failed message, the agent run, the review and the retry are steps of one Visual Trace session, and the agent's step carries the model, tokens, duration and every tool call, including the IRIS Vector Search queries. No external tracing service, so prompts and payloads stay in IRIS, and the trace leads to an action: approve, change the patch, resend. Details in [ARCHITECTURE.md](docs/ARCHITECTURE.md#tracing-the-llm-pipeline).
 - **Alert storms cost one decision.** Failures with the same error signature on the same component within `CoalesceWindow` reuse the open decision with no LLM call, and their retries are staggered (`RetryStagger`).
 - **Measured.** On the ten demo failures with `deepseek-v4.1-flash`: 10/10 expected decisions, ~6–9 s and ~4–5k input tokens per decision; in replay mode ~30–400 ms and no tokens.
 

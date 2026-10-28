@@ -175,6 +175,22 @@ Method TestOperatorPolicy()
     &sql(DELETE FROM Triage_Data.ToolCallLog WHERE IncidentId = -1)
 }
 
+Method TestToolCallTrace()
+{
+    set incidentId = -1
+    &sql(DELETE FROM Triage_Data.ToolCallLog WHERE IncidentId = :incidentId)
+    for call = $listbuild("search_runbooks", "{""query"":""HTTP 503""}", 1, 85), $listbuild("get_event_log", "{""sessionId"":7}", 0, 3), $listbuild("mcp:get_incident", "{""incidentId"":-1}", 1, 40) {
+        set log = ##class(Triage.Data.ToolCallLog).%New()
+        set log.IncidentId = incidentId, log.ToolName = $list(call, 1), log.Arguments = $list(call, 2), log.Success = $list(call, 3), log.DurationMs = $list(call, 4)
+        do log.%Save()
+    }
+    set trace = ##class(Triage.Data.ToolCallLog).Trace(incidentId)
+    do $$$AssertEquals($piece(trace, $char(10), 1), "search_runbooks {""query"":""HTTP 503""} - 85 ms", "a vector search is traced with its query and duration")
+    do $$$AssertEquals($piece(trace, $char(10), 2), "get_event_log {""sessionId"":7} - failed", "a failed call says so")
+    do $$$AssertEquals($length(trace, $char(10)), 2, "operator calls through MCP are left out")
+    &sql(DELETE FROM Triage_Data.ToolCallLog WHERE IncidentId = :incidentId)
+}
+
 Method TestSecretsRedacted()
 {
     for name = "Password", "APIToken", "SecretKey", "Credentials" {
