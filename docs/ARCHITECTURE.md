@@ -21,7 +21,7 @@ The details behind the [README](../README.md).
 1. `Demo.ERP` sets `RetryInterval=5`, `FailureTimeout=15` and `AlertRetryGracePeriod=60`, and both demo operations retry `502` and `504` themselves (`RetryableStatusCodes`). A short blip such as SO-1008 is resolved by the operation: no alert, no LLM call.
 2. When an outage lasts longer than `FailureTimeout`, keeping the message in a `PoolSize=1` queue would block every valid message behind it. The operation gives up after 15 seconds and alerts `Ens.Alert`, which frees the queue.
 3. `TriageProcess` schedules the resend out of band through `Ens.Alarm`: `OnResponse` wakes the process in the same Visual Trace session and calls `Ens.MessageHeader.ResendDuplicatedMessage`.
-4. Unlike a fixed `RetryInterval`, the delay follows the evidence: 30 seconds when `Demo.WMS` answers `503` with `Retry-After: 30`, 60 seconds or more for a `502`. A `Retry-After` sent by the target is also a minimum enforced by `Triage.Policy`, so the resend never comes earlier even if the model forgets to ask for a delay (seen once with DeepSeek, whose reason said "after 30s" while the call carried no delay).
+4. Unlike a fixed `RetryInterval`, the delay follows the evidence: 30 seconds when `Demo.WMS` answers `503` with `Retry-After: 30`, 60 seconds or more for a `502`. A `Retry-After` sent by the target is also a minimum enforced by `Triage.Policy`, so the resend never comes earlier even if the model forgets to ask for a delay (seen once with DeepSeek, whose reason said "after 30s" while the call carried no delay). The header can also carry an HTTP date (`Retry-After: Wed, 28 Oct 2026 10:02:00 GMT`, RFC 9110): `Triage.Policy.SecondsUntil` is an Embedded Python method that parses it with `email.utils` and returns the seconds left.
 
 In an early prototype the outage was simulated by pointing `Demo.ERP` to `localhost:1`. The agent called `get_component_settings`, compared `localhost:1` with the configured `HTTPPort`, and escalated: *"misconfigured endpoint rather than a transient outage"*. It was right, so the demo now uses a real `502` from a gateway.
 
@@ -149,7 +149,7 @@ With Gemini's free tier (20 requests a day per model) use **Quick demo**: a full
 
 ## Tests
 
-`Triage.Test.PolicyTest` has 70 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After`, error signatures, secret redaction, session isolation, replay mode, operator patches and the MCP note requirement.
+`Triage.Test.PolicyTest` has 76 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), error signatures, secret redaction, session isolation, replay mode, operator patches and the MCP note requirement.
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"
@@ -198,7 +198,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Service/             ReviewService (human reviews as steps of the production)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (70 assertions)
+  Test/PolicyTest.cls  %UnitTest suite (76 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode

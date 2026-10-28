@@ -109,6 +109,20 @@ Method TestRetryDelay()
     do $$$AssertEquals(##class(Triage.Policy).RetryDelay(30, config, 1, error), 35, "staggered after Retry-After")
 }
 
+Method TestRetryAfterDate()
+{
+    set now = "Wed, 28 Oct 2026 10:00:00 GMT"
+    set error = "HTTP 503 Service Unavailable from WMS: scheduled maintenance in progress. Retry-After: Wed, 28 Oct 2026 10:02:00 GMT"
+    do $$$AssertEquals(##class(Triage.Policy).RetryAfter(error, now), 120, "an HTTP date becomes the seconds left")
+    do $$$AssertEquals(##class(Triage.Policy).RetryAfter("Retry-After: Wed, 28 Oct 2026 09:59:00 GMT", now), 0, "a date already past waits nothing")
+    do $$$AssertEquals(##class(Triage.Policy).RetryAfter("Retry-After: soon", now), 0, "a value that is not a date is ignored")
+    do $$$AssertEquals(##class(Triage.Policy).RetryAfter("Retry-After: 30", now), 30, "seconds still work")
+    do $$$AssertEquals(##class(Triage.Policy).RetryAfter("HTTP 503 with no header", now), 0, "no header, no floor")
+    set later = "Retry-After: " _ ##class(%SYS.Python).Import("email.utils").formatdate($zdatetime($ztimestamp, -2) + 90, 0, 1)
+    set floor = ##class(Triage.Policy).RetryAfter(later)
+    do $$$AssertTrue((floor >= 85) && (floor <= 90), "a date 90 s ahead of the clock gives about 90 s (got " _ floor _ ")")
+}
+
 Method TestSignature()
 {
     set a = ##class(Triage.Data.Incident).Signature("Demo.ERP", "ERROR #6059: socket to erp:8443 failed for order 'SO-1002' after 15 seconds")

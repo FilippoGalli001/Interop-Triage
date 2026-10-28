@@ -56,12 +56,34 @@ ClassMethod RetryDelay(requested As %Integer, config As %DynamicObject, position
     quit delay + (position * config.retryStagger)
 }
 
-/// The seconds of a "Retry-After: N" in an error text, 0 when there is none.
-ClassMethod RetryAfter(errorText As %String) As %Integer
+/// The seconds a "Retry-After" in an error text asks to wait, 0 when there is none.
+/// HTTP allows two forms (RFC 9110): a number of seconds ("Retry-After: 30") or a date
+/// ("Retry-After: Wed, 28 Oct 2026 10:00:00 GMT"), which is turned into the seconds left from now.
+ClassMethod RetryAfter(errorText As %String, now As %String = "") As %Integer
 {
     set at = $find($zconvert(errorText, "L"), "retry-after:")
     quit:'at 0
-    quit +$zstrip($extract(errorText, at, at + 10), "<W")
+    set value = $zstrip($piece($extract(errorText, at, *), $char(10)), "<>W")
+    quit:$extract(value)?1N +value
+    quit ..SecondsUntil(value, now)
+}
+
+/// Seconds from now (or from the HTTP date now, for tests) until an HTTP date; 0 when it is past or not a date.
+ClassMethod SecondsUntil(httpDate As %String, now As %String = "") As %Integer [ Language = python ]
+{
+    from datetime import datetime, timezone
+    from email.utils import parsedate_to_datetime
+
+    def parse(text):
+        when = parsedate_to_datetime(text)
+        return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+    try:
+        when = parse(httpDate)
+        base = parse(now) if now else datetime.now(timezone.utc)
+    except (TypeError, ValueError, IndexError):
+        return 0
+    return max(0, int((when - base).total_seconds()))
 }
 
 /// Returns "" when the patch of a FIX_AND_RESEND may be applied to the failed message, otherwise why not.
