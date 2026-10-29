@@ -6,8 +6,11 @@ Property TargetConfigName As Ens.DataType.ConfigName [ InitialExpression = "Ens.
 
 Parameter SETTINGS = "TargetConfigName:Basic:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId}";
 
+/// The review joins the session of the failed message, so the Visual Trace shows it next to the agent's run and the resend.
 Method OnProcessInput(pInput As Triage.Msg.ReviewRequest, Output pOutput As %RegisteredObject) As %Status
 {
+    set incident = ##class(Triage.Data.Incident).%OpenId(pInput.IncidentId)
+    set:$isobject(incident) ..%SessionId = incident.SessionId
     quit ..SendRequestAsync(..TargetConfigName, pInput)
 }
 
