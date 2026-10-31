@@ -87,6 +87,15 @@ ClassMethod Decide(incidentId As %Integer) As %Status
         set session = agent.CreateSession()
         set start = $zhorolog
         set response = agent.Chat(session, ..Prompt(incident))
+        set usage = ..AddUsage("", response.Usage)
+        // Some models answer in text, or write the tool call as text, instead of calling the tool.
+        // One reminder in the same session; if there is still no decision, the incident is escalated.
+        do incident.%Reload()
+        if incident.AgentAction = "" {
+            do ##class(Ens.Util.Log).LogWarning($classname(), "Decide", "Incident " _ incidentId _ ": the agent answered without calling submit_decision, reminded once")
+            set response = agent.Chat(session, "You did not call the submit_decision tool, so nothing was recorded. Call submit_decision now with your decision.")
+            set usage = ..AddUsage(usage, response.Usage)
+        }
         set duration = ($zhorolog - start) * 1000 \ 1
 
         // submit_decision saved the decision: reload it before adding the run data.
@@ -95,12 +104,12 @@ ClassMethod Decide(incidentId As %Integer) As %Status
         set incident.Model = agent.Model
         set incident.ToolCalls = audit.CallCount
         // Providers report different usage fields; missing ones stay empty.
-        if $isobject(response.Usage) {
-            set incident.PromptTokens = response.Usage.%Get("prompt_tokens")
-            set incident.CompletionTokens = response.Usage.%Get("completion_tokens")
-            set incident.ReasoningTokens = response.Usage.%Get("reasoning_tokens")
+        if $isobject(usage) {
+            set incident.PromptTokens = usage.%Get("prompt_tokens")
+            set incident.CompletionTokens = usage.%Get("completion_tokens")
+            set incident.ReasoningTokens = usage.%Get("reasoning_tokens")
             // Some providers (Gemini) only report thinking tokens inside total_tokens.
-            set total = response.Usage.%Get("total_tokens")
+            set total = usage.%Get("total_tokens")
             if (incident.ReasoningTokens = "") && (total > (incident.PromptTokens + incident.CompletionTokens)) {
                 set incident.ReasoningTokens = total - incident.PromptTokens - incident.CompletionTokens
             }
@@ -125,6 +134,18 @@ ClassMethod Decide(incidentId As %Integer) As %Status
         do ##class(Triage.Data.Recording).Record(incident)
     }
     quit $select($$$ISERR(sc): sc, 1: sc2)
+}
+
+/// Adds the usage of one more Chat to a total: the counters are summed, a counter missing in both stays missing.
+ClassMethod AddUsage(total As %DynamicObject, usage As %DynamicObject) As %DynamicObject
+{
+    quit:'$isobject(usage) total
+    set:'$isobject(total) total = {}
+    for key = "prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens" {
+        continue:usage.%Get(key)=""
+        do total.%Set(key, total.%Get(key) + usage.%Get(key))
+    }
+    quit total
 }
 
 /// Replay mode, used when no LLM key is configured (or LLM_PROVIDER=replay): no LLM is called.

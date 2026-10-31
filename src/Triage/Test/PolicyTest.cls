@@ -191,6 +191,16 @@ Method TestToolCallTrace()
     &sql(DELETE FROM Triage_Data.ToolCallLog WHERE IncidentId = :incidentId)
 }
 
+Method TestAddUsage()
+{
+    set total = ##class(Triage.Agent.TriageAgent).AddUsage("", {"prompt_tokens": 3000, "completion_tokens": 200, "total_tokens": 3200})
+    set total = ##class(Triage.Agent.TriageAgent).AddUsage(total, {"prompt_tokens": 3500, "completion_tokens": 100, "total_tokens": 3600})
+    do $$$AssertEquals(total.%Get("prompt_tokens"), 6500, "a reminder adds its prompt tokens")
+    do $$$AssertEquals(total.%Get("completion_tokens"), 300, "and its completion tokens")
+    do $$$AssertEquals(total.%Get("reasoning_tokens"), "", "a counter no provider reported stays empty")
+    do $$$AssertEquals(##class(Triage.Agent.TriageAgent).AddUsage(total, "").%Get("total_tokens"), 6800, "a call without usage changes nothing")
+}
+
 Method TestSecretsRedacted()
 {
     for name = "Password", "APIToken", "SecretKey", "Credentials" {

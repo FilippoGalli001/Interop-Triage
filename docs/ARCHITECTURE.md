@@ -73,7 +73,7 @@ All settings are on `Ens.Alert` (`Triage.Production.TriageProcess`), in the cate
 - `lookup_error_code(code)`: exact IRIS error text (`$system.Status`) and the runbooks tagged with that code.
 - `search_runbooks(query)`: vector search over the ten runbooks in `runbooks/`.
 - `search_incidents(query)`: vector search over past incidents reviewed by a person.
-- `submit_decision(...)`: the only way to answer (`action`, `reason`, `confidence`, `fixType`, `patch`, `retryAfterSeconds`, `upstreamRecommendation`).
+- `submit_decision(...)`: the only way to answer (`action`, `reason`, `confidence`, `fixType`, `patch`, `retryAfterSeconds`, `upstreamRecommendation`). A model that answers in text instead, or writes the call as text, is reminded once in the same session; with still no decision, the incident is escalated.
 
 Against prompt injection from payloads or error strings, `TriageAgent.Prompt()` escapes `<` and `>` and wraps external text in `<error_text>` and `<message_payload>` tags, telling the model to treat it as untrusted data.
 
@@ -209,7 +209,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Service/             ReviewService (human reviews as steps of the production)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (79 assertions)
+  Test/PolicyTest.cls  %UnitTest suite (83 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode
