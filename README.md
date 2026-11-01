@@ -20,6 +20,8 @@ When a business operation fails, IRIS sends an alert to `Ens.Alert`. Here `Ens.A
 
 The agent cannot change or resend anything itself. Deterministic, unit-tested rules (`Triage.Policy`) decide whether a proposal runs at once, waits for an operator, or is escalated. Operators review from a dashboard served by IRIS or from their own AI assistant over MCP.
 
+**Demo video:** [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) · **Open Exchange:** [Interop-Triage](https://openexchange.intersystems.com/package/Interop-Triage)
+
 ---
 
 ## Quick Start
