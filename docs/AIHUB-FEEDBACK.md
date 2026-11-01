@@ -19,8 +19,8 @@ Every item was observed while building this project on `2026.3.0AI.154.0`.
 | FastEmbed downloads its model from Hugging Face on first use (about 10 s, needs network). | Runbooks are indexed during `docker build`, so the image holds the model and the runtime needs no internet. |
 | A `%LogExecution` override in a `%AI.Policy.Audit` subclass must be declared `As %Status`, which was not obvious. | Declared explicitly in both audit policies. |
 | `LoadDir` compiles a toolset whose XData `<Policies>` names policy classes before those classes, which fails in `%GetAuditPolicy` during the build. | `DependsOn` on the toolset class (`Triage.MCP.Tools`). |
-| Over MCP, `call.arguments` arrives as a JSON string in the audit policy but as an object in the authorization policy. | Arguments are normalized in `Triage.MCP.AuditPolicy.Arguments`. |
-| Calls denied by an authorization policy never reach the audit policy, so refusals leave no trace. | The authorization policy logs its own denials (`Triage.MCP.AuditPolicy.LogDenied`). |
+| `call.arguments` arrives as a JSON string in the audit hooks (`%LogExecution`, `%LogDenial`) but as an object in the authorization policy, for the same call, with `%AI.ToolMgr.ExecuteTool` and over MCP. Reported as [ai-hub-eap#40](https://github.com/intersystems-community/ai-hub-eap/issues/40). | Arguments are normalized in `Triage.MCP.AuditPolicy.Arguments`. |
+| Calls denied by an authorization policy do not reach `%LogExecution`. Build 154 already has a separate `%LogDenial` hook for them ([ai-hub-eap#29](https://github.com/intersystems-community/ai-hub-eap/issues/29)), which we missed at first because no documentation we had mentioned it. | Both audit policies override `%LogDenial`, so refused calls are logged too. |
 | Tool names can arrive uppercased in `call.name` (`GET_EVENT_LOG`), depending on the provider. | Tool names are compared in lower case. |
 | `response.Usage` differs between providers: Gemini reports reasoning tokens only inside `total_tokens`, and after a tool loop the counts look cumulative. | Usage is read defensively; reasoning tokens are total − prompt − completion when the provider omits them. |
 | A model can return a tool call as plain text: DeepSeek through OpenRouter once wrote `submit_decision` in its own markup (`<｜DSML｜invoke name="submit_decision">…`), so `Chat` returned text and no tool ran. | When no decision was recorded, `Triage.Agent.TriageAgent.Decide` reminds the model once in the same session; otherwise the incident is escalated. |
@@ -32,7 +32,7 @@ Every item was observed while building this project on `2026.3.0AI.154.0`.
 
 - A structured-output option on `%AI.Agent` (a JSON schema for the final answer), so a decision tool is not the only way to get typed results.
 - A `Usage` object with the same keys across providers, including reasoning tokens.
-- An audit hook for calls denied by an authorization policy.
+- `%LogDenial` in the audit policy documentation.
 - A ready-made business operation that runs a `%AI.Agent` inside a production with timeout and retry settings; `Triage.Production.AgentOperation` is our version of it.
 - A way to ship the FastEmbed model with the kit for air-gapped installations.
 

@@ -18,9 +18,8 @@ Method %CanExecute(toolref As %String, call As %DynamicObject, metadata As %Dyna
     quit:'write $$$OK
     set note = ##class(Triage.MCP.AuditPolicy).Arguments(call).note
     if $zstrip(note, "<>W") = "" {
-        set denied = $$$ERROR($$$GeneralError, "A note is required: say why, it is recorded with the review and kept in the agent's memory")
-        do ##class(Triage.MCP.AuditPolicy).LogDenied(call, denied)
-        quit denied
+        // The audit policy records the denial (%LogDenial).
+        quit $$$ERROR($$$GeneralError, "A note is required: say why, it is recorded with the review and kept in the agent's memory")
     }
     quit $$$OK
 }

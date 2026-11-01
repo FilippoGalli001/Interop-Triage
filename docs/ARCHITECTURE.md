@@ -35,7 +35,7 @@ Why corrections are never automatic: an order with `ShipDate = "21/11/2026"` fai
 Three layers check every agent run:
 
 1. **Tool authorization** (`Triage.Agent.ScopePolicy`, a `%AI.Policy.Authorization`): any call whose `incidentId` or `sessionId` differs from the current incident is denied, so a crafted payload cannot make the agent read or act on another session.
-2. **Tool audit** (`Triage.Agent.AuditPolicy`, a `%AI.Policy.Audit`): every executed call is logged with arguments, a result preview and its duration in `Triage.Data.ToolCallLog`.
+2. **Tool audit** (`Triage.Agent.AuditPolicy`, a `%AI.Policy.Audit`): every executed call is logged with arguments, a result preview and its duration in `Triage.Data.ToolCallLog`; calls denied by the authorization policy are logged as failed (`%LogDenial`).
 3. **Deterministic rules** (`Triage.Policy`) turn the proposal into one of three outcomes:
    - **ESCALATE**: unknown or empty action (default deny), `MaxAttempts` exceeded, or a patch that is invalid JSON, empty, names a property the message class does not have, touches `ProtectedFields`, or has a non-scalar value.
    - **APPROVAL**: confidence below `MinConfidence`, action not in `AutoActions`, or a patch that is not a `normalization` or touches a field outside `AutoFixFields`.

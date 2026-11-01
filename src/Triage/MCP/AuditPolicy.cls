@@ -20,7 +20,7 @@ Method %LogExecution(call As %DynamicObject, metadata As %DynamicObject, result 
     quit log.%Save()
 }
 
-/// The call's arguments as an object: over MCP they can arrive as a JSON string.
+/// The call's arguments as an object: the audit hooks receive them as a JSON string (ai-hub-eap#40), the authorization policy as an object.
 ClassMethod Arguments(call As %DynamicObject) As %DynamicObject
 {
     set args = call.arguments
@@ -34,7 +34,7 @@ ClassMethod Arguments(call As %DynamicObject) As %DynamicObject
 }
 
 /// Records a call that a policy denied, so refused attempts are visible too.
-ClassMethod LogDenied(call As %DynamicObject, reason As %Status)
+Method %LogDenial(call As %DynamicObject, metadata As %DynamicObject, status As %Status) As %Status
 {
     set args = ..Arguments(call)
     set log = ##class(Triage.Data.ToolCallLog).%New()
@@ -42,8 +42,8 @@ ClassMethod LogDenied(call As %DynamicObject, reason As %Status)
     set log.ToolName = "mcp:" _ $zconvert(call.name, "L")
     set log.Arguments = args.%ToJSON()
     set log.Success = 0
-    set log.Error = "Denied: " _ $system.Status.GetErrorText(reason)
-    do log.%Save()
+    set log.Error = "Denied: " _ $system.Status.GetErrorText(status)
+    quit log.%Save()
 }
 
 }

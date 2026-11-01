@@ -23,4 +23,17 @@ Method %LogExecution(call As %DynamicObject, metadata As %DynamicObject, result 
     quit log.%Save()
 }
 
+/// A call denied by the authorization policy (another incident or session): recorded as a failed call.
+Method %LogDenial(call As %DynamicObject, metadata As %DynamicObject, status As %Status) As %Status
+{
+    set ..CallCount = ..CallCount + 1
+    set log = ##class(Triage.Data.ToolCallLog).%New()
+    set log.IncidentId = ..IncidentId
+    set log.ToolName = call.name
+    set log.Arguments = $select($isobject(call.arguments): call.arguments.%ToJSON(), 1: call.arguments)
+    set log.Success = 0
+    set log.Error = "Denied: " _ $system.Status.GetErrorText(status)
+    quit log.%Save()
+}
+
 }
