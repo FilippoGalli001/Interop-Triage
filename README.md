@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" alt="Interop Triage" width="420">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/FilippoGalli001/Interop-Triage/main/assets/logo-dark.png">
+    <img src="https://raw.githubusercontent.com/FilippoGalli001/Interop-Triage/main/assets/logo.png" alt="Interop Triage" width="420">
   </picture>
 </p>
 
@@ -52,6 +52,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Dashboard      | http://localhost:52773/triage/index.html                                                                             |
 | Production     | [EnsPortal.ProductionConfig.zen](http://localhost:52773/csp/triage/EnsPortal.ProductionConfig.zen?$NAMESPACE=TRIAGE) |
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
+| Workflow inbox | [_DeepSee.UserPortal.Workflow.zen](http://localhost:52773/csp/triage/_DeepSee.UserPortal.Workflow.zen) (escalations to accept and resolve) |
 
 **Check** the 87 `%UnitTest` assertions and the MCP server:
 
@@ -72,7 +73,7 @@ Use the buttons at the top of the dashboard:
 - **Run demo**: all ten failures across two systems, about ten agent runs.
 - **Run follow-up**: after Run demo, two new failures similar to earlier ones, to see the memory at work.
 
-With no `LLM_API_KEY` everything runs in **replay mode**, and a yellow banner says so: the tool calls recorded from live runs (`recordings/decisions.json`) run again on the current data, together with the rules, timers and approvals. See [how replay mode stays honest](docs/ARCHITECTURE.md#how-replay-mode-stays-honest).
+With no `LLM_API_KEY` everything runs in **replay mode**, and a yellow banner says so: the tool calls recorded from live runs (`recordings/decisions.json`) run again on the current data, together with the rules, timers and approvals. See [how replay mode stays honest](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md#how-replay-mode-stays-honest).
 
 ### The Human in the Loop, in Two Minutes
 
@@ -132,12 +133,12 @@ flowchart TD
 - **Native retries first.** The operations keep their usual `RetryInterval` and `FailureTimeout`, so short blips never reach the agent. A longer outage leaves the queue after `FailureTimeout`, freeing the messages behind it, and the agent picks the delay from the evidence. A `Retry-After` from the target, in seconds or as an HTTP date (parsed with Embedded Python), is a minimum the rules enforce.
 - **Rules decide.** A proposal runs automatically only if its action is in `AutoActions`, its confidence reaches `MinConfidence`, and any patch is a `normalization` touching only `AutoFixFields`. Anything else waits for a person; unknown actions, invalid patches and protected fields (`OrderId`, `CustomerId`, `Sku`) are escalated. The rules check the fields, not just the model's own label: `gemini-2.5-flash` once called the date reordering a normalization, and it still went to approval.
 - **Memory of people's decisions.** Runbooks and reviewed incidents are two `%AI.RAG.KnowledgeBase`s on FastEmbed and IRIS Vector Search, inside the container. Only incidents reviewed by a person, with their note, are remembered; automatic decisions never are.
-- **Everything is traced, inside IRIS.** Interoperability is the tracing layer for the LLM pipeline ([Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)): the failed message, the agent run, the review and the retry are steps of one Visual Trace session, and the agent's step carries the model, tokens, duration and every tool call, including the IRIS Vector Search queries. No external tracing service, so prompts and payloads stay in IRIS, and the trace leads to an action: approve, change the patch, resend. Details in [ARCHITECTURE.md](docs/ARCHITECTURE.md#tracing-the-llm-pipeline).
+- **Everything is traced, inside IRIS.** Interoperability is the tracing layer for the LLM pipeline ([Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)): the failed message, the agent run, the review and the retry are steps of one Visual Trace session, and the agent's step carries the model, tokens, duration and every tool call, including the IRIS Vector Search queries. No external tracing service, so prompts and payloads stay in IRIS, and the trace leads to an action: approve, change the patch, resend. Details in [ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md#tracing-the-llm-pipeline).
 - **Escalations are Workflow Engine tasks.** Each escalated incident is also an `EnsLib.Workflow` task for the role `Triage.Operators`, with the error, the agent's diagnosis and the fix it suggests. Resolving it in the IRIS Workflow inbox, in the dashboard or over MCP closes both, and the note joins the agent's memory.
 - **Alert storms cost one decision.** Failures with the same error signature on the same component within `CoalesceWindow` reuse the open decision with no LLM call, and their retries are staggered (`RetryStagger`).
 - **Measured.** On the ten demo failures with `deepseek-v4.1-flash`: 10/10 expected decisions, ~6–9 s and ~4–5k input tokens per decision; in replay mode ~30–400 ms and no tokens.
 
-All thresholds are production settings on `Ens.Alert`, under **Autonomy**, **Retry** and **Cost**. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+All thresholds are production settings on `Ens.Alert`, under **Autonomy**, **Retry** and **Cost**. Details: [docs/ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md).
 
 ---
 
@@ -149,7 +150,7 @@ All thresholds are production settings on `Ens.Alert`, under **Autonomy**, **Ret
 claude mcp add iris-triage -- docker exec -i iris-triage python3 /home/irisowner/dev/mcp/stdio_proxy.py
 ```
 
-In Git Bash on Windows, prefix the command with `MSYS_NO_PATHCONV=1`. Then ask Claude Code _"Which incidents are waiting for my approval?"_. Claude Desktop setup and the reason for the small proxy: [MCP server](docs/ARCHITECTURE.md#mcp-server).
+In Git Bash on Windows, prefix the command with `MSYS_NO_PATHCONV=1`. Then ask Claude Code _"Which incidents are waiting for my approval?"_. Claude Desktop setup and the reason for the small proxy: [MCP server](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md#mcp-server).
 
 ---
 
@@ -160,13 +161,13 @@ Built and verified on build `2026.3.0AI.154.0`.
 - **Worked well:** declarative provider and key from `.env`, tools from class method signatures, authorization and audit policies on a toolset, loop detection, and RAG with no external service.
 - **Needed workarounds:** no structured-output option on `%AI.Agent`, `AddDocument` does not split long texts, provider-dependent `Usage` keys, tool arguments of a different type in audit and authorization policies ([ai-hub-eap#40](https://github.com/intersystems-community/ai-hub-eap/issues/40)), and an `iris-mcp-server` 2.0.0 issue with current Claude Code versions, reported as [ai-hub-eap#39](https://github.com/intersystems-community/ai-hub-eap/issues/39).
 
-Every observation with its workaround, and what we would like to see: [docs/AIHUB-FEEDBACK.md](docs/AIHUB-FEEDBACK.md).
+Every observation with its workaround, and what we would like to see: [docs/AIHUB-FEEDBACK.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/AIHUB-FEEDBACK.md).
 
 ---
 
 ## More
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): agent tools, rules, settings, memory, MCP, dashboard, measurements, tests, and how to plug the triage into your own production.
+- [docs/ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md): agent tools, rules, settings, memory, MCP, dashboard, measurements, tests, and how to plug the triage into your own production.
 - Limitations: early access APIs may change; replay mode covers the 11 recorded failures, and new ones are escalated without a key; demo credentials (`_SYSTEM` / `SYS`) are for local use only.
 - AI coding assistants (Claude Code, Gemini) and [IRIS Agentic Dev](https://github.com/intersystems-community/iris-agentic-dev) were used during development; design, scenarios and every verification run on build 154 were directed by the author.
 
