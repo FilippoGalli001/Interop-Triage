@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/FilippoGalli001/Interop-Triage/main/assets/logo-dark.png">
-    <img src="https://raw.githubusercontent.com/FilippoGalli001/Interop-Triage/main/assets/logo.png" alt="Interop Triage" width="420">
-  </picture>
+  <img src="https://raw.githubusercontent.com/FilippoGalli001/Interop-Triage/main/assets/logo.png" alt="Interop Triage" width="420">
 </p>
 
 **The AI proposes, the code decides, people approve what is risky.**
