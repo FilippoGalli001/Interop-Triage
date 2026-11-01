@@ -255,9 +255,14 @@ function renderRows(list) {
   }));
 }
 
+// A patch only matters for FIX_AND_RESEND: one sent with another action is never applied, so it is not shown.
+function hasPatch(inc) {
+  return inc.agentAction === "FIX_AND_RESEND" && !!inc.agentPatch && inc.agentPatch !== "{}";
+}
+
 // The patch shown is the operator's when they changed the agent's before approving.
 function bodyWithPatch(inc) {
-  const body = parse(inc.messageBody), proposed = parse(inc.agentPatch), patch = inc.operatorPatch ? parse(inc.operatorPatch) : proposed;
+  const body = parse(inc.messageBody), proposed = hasPatch(inc) ? parse(inc.agentPatch) : {}, patch = inc.operatorPatch ? parse(inc.operatorPatch) : proposed;
   const rows = [];
   for (const [k, v] of Object.entries(body)) {
     rows.push(el("div", {}, k));
@@ -319,7 +324,7 @@ function reviewForm(inc) {
     resolve.addEventListener("click", send("resolve", resolve));
     const inbox = inc.taskRequestId
       ? el("div", { class: "tag" }, "Also a task for role Triage.Operators in the ",
-          el("a", { href: "/csp/triage/EnsPortal.WFWorklist.zen", target: "_blank", rel: "noopener" }, "IRIS Workflow inbox"),
+          el("a", { href: "/csp/triage/_DeepSee.UserPortal.Workflow.zen", target: "_blank", rel: "noopener" }, "IRIS Workflow inbox"),
           ": resolving it there or here closes both.")
       : "";
     return [el("h4", {}, "Resolve"), inbox, note, el("div", { class: "row" }, resolve, msg)];
@@ -336,7 +341,7 @@ function renderDetail(inc) {
       el("span", { class: "tag" }, "(the Management Portal has its own sign-in: demo _SYSTEM / SYS)")),
     el("div", { class: "tag" }, inc.sourceConfigName + " \u00b7 attempt " + inc.attemptNumber),
     el("h4", {}, "Error"), el("div", { class: "box mono" }, inc.alertText),
-    el("h4", {}, inc.agentPatch && inc.agentPatch !== "{}" ? "Message and proposed patch" : "Message"), bodyWithPatch(inc),
+    el("h4", {}, hasPatch(inc) ? "Message and proposed patch" : "Message"), bodyWithPatch(inc),
     el("h4", {}, "Agent proposal"),
     el("div", { class: "box" },
       el("div", {}, el("b", {}, (inc.agentAction || "none").replace(/_/g, " ")), inc.agentConfidence !== "" ? "  \u00b7 confidence " + inc.agentConfidence : "",

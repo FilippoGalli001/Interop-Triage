@@ -86,7 +86,13 @@ ClassMethod CreateWebApps() As %Status
     set mcp("Type") = 18
     set mcp("AutheEnabled") = 32
     set mcp("Enabled") = 1
-    quit ..SaveWebApp("/mcp/triage", .mcp)
+    set sc = ..SaveWebApp("/mcp/triage", .mcp)
+    quit:$$$ISERR(sc) sc
+
+    // The Workflow inbox where operators accept and resolve tasks (_DeepSee.UserPortal.Workflow.zen)
+    // belongs to the User Portal, which needs Analytics enabled on the namespace's portal application.
+    set portal("DeepSeeEnabled") = 1
+    quit ##class(Security.Applications).Modify("/csp/" _ $zconvert(namespace, "L"), .portal)
 }
 
 ClassMethod SaveWebApp(name As %String, ByRef props) As %Status

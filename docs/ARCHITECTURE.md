@@ -147,7 +147,7 @@ The project uses IRIS Interoperability as the tracing layer for its GenAI pipeli
 
 When an incident is escalated, `TriageProcess` sends an `EnsLib.Workflow.TaskRequest` to `Triage.Operators`, an `EnsLib.Workflow.Operation` whose role (same name) holds the demo user `_SYSTEM`. The task carries the error, the agent's reason, the upstream recommendation and the policy note, with the action **Resolved** and a **Note** field.
 
-- **Resolved in the IRIS Workflow inbox** (`EnsPortal.WFWorklist.zen`): the task response comes back to `TriageProcess.OnTaskDone` in the same session, which resolves the incident with the note and the user, and adds it to the incident memory.
+- **Resolved in the IRIS Workflow inbox** (`/csp/triage/_DeepSee.UserPortal.Workflow.zen`, the User Portal inbox; Analytics is enabled on `/csp/triage` for it): the task response comes back to `TriageProcess.OnTaskDone` in the same session, which resolves the incident with the note and the user, and adds it to the incident memory.
 - **Resolved in the dashboard or over MCP**: `ReviewService.Resolve` completes the open task with the same note, so it leaves the inbox; `OnTaskDone` then finds the incident already resolved.
 - The task request and its response are steps of the incident's session in the Visual Trace.
 
