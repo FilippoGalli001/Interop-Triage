@@ -42,6 +42,8 @@ XData ProductionDefinition
   </Item>
   <Item Name="Triage.EscalationOperation" Category="Triage" ClassName="Triage.Production.EscalationOperation" PoolSize="1" Enabled="true">
   </Item>
+  <Item Name="Triage.Operators" Category="Triage" ClassName="EnsLib.Workflow.Operation" PoolSize="1" Enabled="true">
+  </Item>
   <Item Name="Ens.Alarm" Category="Triage" ClassName="Ens.Alarm" PoolSize="1" Enabled="true">
   </Item>
   <Item Name="Triage.ReviewService" Category="Triage" ClassName="Triage.Service.ReviewService" PoolSize="0" Enabled="true">

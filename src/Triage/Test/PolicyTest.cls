@@ -201,6 +201,22 @@ Method TestAddUsage()
     do $$$AssertEquals(##class(Triage.Agent.TriageAgent).AddUsage(total, "").%Get("total_tokens"), 6800, "a call without usage changes nothing")
 }
 
+Method TestWorkflowTask()
+{
+    set incident = ##class(Triage.Data.Incident).%New()
+    set incident.SourceConfigName = "Demo.ERP"
+    set incident.MessageBody = {"OrderId": "SO-1006", "Amount": -120}.%ToJSON()
+    set incident.AlertText = "HTTP 409 Conflict from ERP: order amount must be positive"
+    set incident.AgentReason = "Business rule BR-12 violated."
+    set incident.UpstreamRecommendation = "Validate the amount in the source system."
+    set subject = ##class(Triage.Production.TriageProcess).TaskSubject(incident)
+    set message = ##class(Triage.Production.TriageProcess).TaskMessage(incident)
+    do $$$AssertTrue(subject [ "(SO-1006): Demo.ERP failed", "the task names the message and the component: " _ subject)
+    do $$$AssertTrue((message [ "HTTP 409") && (message [ "BR-12"), "the task carries the error and the agent's diagnosis")
+    do $$$AssertTrue(message [ "Fix the cause: Validate the amount", "and the fix the agent suggests")
+    do $$$AssertStatusOK(##class(Triage.Service.ReviewService).CloseTask(incident, "note"), "an incident without a task closes nothing")
+}
+
 Method TestSecretsRedacted()
 {
     for name = "Password", "APIToken", "SecretKey", "Credentials" {

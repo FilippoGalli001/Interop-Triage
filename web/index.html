@@ -317,7 +317,12 @@ function reviewForm(inc) {
   if (inc.status === "ESCALATED") {
     const resolve = el("button", { class: "good" }, "Mark as resolved");
     resolve.addEventListener("click", send("resolve", resolve));
-    return [el("h4", {}, "Resolve"), note, el("div", { class: "row" }, resolve, msg)];
+    const inbox = inc.taskRequestId
+      ? el("div", { class: "tag" }, "Also a task for role Triage.Operators in the ",
+          el("a", { href: "/csp/triage/EnsPortal.WFWorklist.zen", target: "_blank", rel: "noopener" }, "IRIS Workflow inbox"),
+          ": resolving it there or here closes both.")
+      : "";
+    return [el("h4", {}, "Resolve"), inbox, note, el("div", { class: "row" }, resolve, msg)];
   }
   return [];
 }

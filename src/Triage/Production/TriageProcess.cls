@@ -40,7 +40,11 @@ Property AgentTarget As Ens.DataType.ConfigName [ InitialExpression = "Triage.Ag
 
 Property EscalationTarget As Ens.DataType.ConfigName [ InitialExpression = "Triage.EscalationOperation" ];
 
-Parameter SETTINGS = "AutoActions:Autonomy,AutoFixFields:Autonomy,ProtectedFields:Autonomy,MinConfidence:Autonomy,MaxAttempts:Autonomy,MinRetryDelay:Retry,MaxRetryDelay:Retry,RetryStagger:Retry,CoalesceWindow:Cost,MaxAgentRunsPerMinute:Cost,AgentTimeout:Cost,AgentTarget:Triage:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId},EscalationTarget:Triage:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId}";
+/// Workflow operation (EnsLib.Workflow.Operation) that gives each escalated incident to its role as a
+/// task. Empty: no workflow tasks.
+Property WorkflowTarget As Ens.DataType.ConfigName [ InitialExpression = "Triage.Operators" ];
+
+Parameter SETTINGS = "AutoActions:Autonomy,AutoFixFields:Autonomy,ProtectedFields:Autonomy,MinConfidence:Autonomy,MaxAttempts:Autonomy,MinRetryDelay:Retry,MaxRetryDelay:Retry,RetryStagger:Retry,CoalesceWindow:Cost,MaxAgentRunsPerMinute:Cost,AgentTimeout:Cost,AgentTarget:Triage:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId},EscalationTarget:Triage:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId},WorkflowTarget:Triage:selector?context={Ens.ContextSearch/ProductionItems?targets=1&productionName=@productionId}";
 
 Method OnRequest(pRequest As Ens.Request, Output pResponse As Ens.Response) As %Status
 {
@@ -173,9 +177,10 @@ Method ScheduleRetry(incident As Triage.Data.Incident) As %Status
     quit ..SendRequestAsync("Ens.Alarm", alarm, 1, "RETRY:" _ incident.%Id(), "Delayed retry of incident " _ incident.%Id())
 }
 
-/// Ens.Alarm answers when a scheduled retry is due.
+/// Ens.Alarm answers when a scheduled retry is due; the workflow operation when a task is completed.
 Method OnResponse(request As Ens.Request, ByRef response As Ens.Response, callrequest As Ens.Request, callresponse As Ens.Response, pCompletionKey As %String) As %Status
 {
+    quit:$piece(pCompletionKey, ":")="TASK" ..OnTaskDone($piece(pCompletionKey, ":", 2), callresponse)
     quit:$piece(pCompletionKey, ":")'="RETRY" $$$OK
     set incident = ##class(Triage.Data.Incident).%OpenId($piece(pCompletionKey, ":", 2))
     quit:'$isobject(incident) $$$OK
@@ -272,11 +277,62 @@ Method Escalate(incident As Triage.Data.Incident, note As %String) As %Status
 {
     set incident.FinalAction = "ESCALATE"
     set incident.GuardrailNote = note
+    set sc = ..OpenTask(incident)
+    if $$$ISERR(sc) { $$$LOGSTATUS(sc) }
     set sc = incident.%Save()
     quit:$$$ISERR(sc) sc
     set request = ##class(Triage.Msg.EscalationRequest).%New()
     set request.IncidentId = incident.%Id()
     quit ..SendRequestAsync(..EscalationTarget, request, 0)
+}
+
+/// Gives the escalated incident to the operators' role as a Workflow Engine task. The task waits in
+/// the IRIS Workflow inbox; its completion comes back to OnResponse in the same session.
+Method OpenTask(incident As Triage.Data.Incident) As %Status
+{
+    quit:..WorkflowTarget="" $$$OK
+    set task = ##class(EnsLib.Workflow.TaskRequest).%New()
+    set task.%Subject = ..TaskSubject(incident)
+    set task.%Message = ..TaskMessage(incident)
+    set task.%Actions = "Resolved"
+    set task.%FormFields = "Note"
+    set sc = ..SendRequestAsync(..WorkflowTarget, task, 1, "TASK:" _ incident.%Id(), "Escalation of incident " _ incident.%Id())
+    quit:$$$ISERR(sc) sc
+    set incident.TaskRequestId = task.%Id()
+    quit $$$OK
+}
+
+ClassMethod TaskSubject(incident As Triage.Data.Incident) As %String
+{
+    set message = ##class(%DynamicObject).%FromJSON($select(incident.MessageBody'="": incident.MessageBody, 1: "{}"))
+    set key = $select(message.OrderId'="": message.OrderId, message.Sku'="": message.Sku, 1: "")
+    quit $extract("Incident " _ incident.%Id() _ $select(key'="": " (" _ key _ ")", 1: "") _ ": " _ incident.SourceConfigName _ " failed, a person must act", 1, 250)
+}
+
+/// What the operator needs in the inbox: the error, the agent's diagnosis and the fix it suggests.
+ClassMethod TaskMessage(incident As Triage.Data.Incident) As %String
+{
+    set nl = $char(13, 10)
+    set text = "Error: " _ incident.AlertText _ nl _ nl _ "Agent: " _ incident.AgentReason
+    set:incident.UpstreamRecommendation'="" text = text _ nl _ nl _ "Fix the cause: " _ incident.UpstreamRecommendation
+    set:incident.GuardrailNote'="" text = text _ nl _ nl _ "Rules: " _ incident.GuardrailNote
+    quit text _ nl _ nl _ "Choose Resolved with a note on what you did: the note becomes part of the agent's memory."
+}
+
+/// A workflow task was completed. Resolved from the inbox: the incident is resolved with the
+/// operator's note. Already resolved from the dashboard or MCP, or cancelled: nothing to do.
+Method OnTaskDone(incidentId As %Integer, task As EnsLib.Workflow.TaskResponse) As %Status
+{
+    quit:'$isobject(task) $$$OK
+    quit:task.%Action'="Resolved" $$$OK
+    set incident = ##class(Triage.Data.Incident).%OpenId(incidentId)
+    quit:'$isobject(incident) $$$OK
+    quit:incident.Status'="ESCALATED" $$$OK
+    set note = $zstrip(task.%FormValues.GetAt("Note"), "<>W")
+    set:note="" note = "Resolved in the Workflow inbox, without a note."
+    set user = $select(task.%UserName'="": task.%UserName, 1: "Workflow inbox")
+    $$$LOGINFO("Incident " _ incidentId _ " resolved by " _ user _ " in the Workflow inbox")
+    quit ##class(Triage.Service.ReviewService).Resolve(incidentId, note, user, 0)
 }
 
 }

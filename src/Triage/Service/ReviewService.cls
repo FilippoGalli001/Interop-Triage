@@ -51,7 +51,8 @@ ClassMethod CheckOperatorPatch(incident As Triage.Data.Incident, approved As %Bo
 }
 
 /// Closes an escalated incident with what the operator did. The note becomes part of the agent's memory.
-ClassMethod Resolve(incidentId As %Integer, note As %String, operator As %String = {$username}) As %Status
+/// closeTask: also complete the incident's Workflow task (not when the task itself is being completed).
+ClassMethod Resolve(incidentId As %Integer, note As %String, operator As %String = {$username}, closeTask As %Boolean = 1) As %Status
 {
     set incident = ##class(Triage.Data.Incident).%OpenId(incidentId)
     quit:'$isobject(incident) $$$ERROR($$$GeneralError, "Unknown incident " _ incidentId)
@@ -63,7 +64,25 @@ ClassMethod Resolve(incidentId As %Integer, note As %String, operator As %String
     set incident.ReviewNote = note
     set sc = incident.%Save()
     quit:$$$ISERR(sc) sc
+    if closeTask {
+        set sc = ..CloseTask(incident, note)
+        if $$$ISERR(sc) { do ##class(Ens.Util.Log).LogStatus($classname(), "Resolve", sc) }
+    }
     quit ##class(Triage.Knowledge.Base).RememberIncident(incident)
+}
+
+/// Completes the incident's open Workflow task as Resolved with the note, so it leaves the inbox.
+ClassMethod CloseTask(incident As Triage.Data.Incident, note As %String) As %Status
+{
+    quit:incident.TaskRequestId="" $$$OK
+    quit:'##class(EnsLib.Workflow.TaskResponse).RequestIdxExists(incident.TaskRequestId, .taskId) $$$OK
+    set task = ##class(EnsLib.Workflow.TaskResponse).%OpenId(taskId)
+    quit:'$isobject(task) $$$OK
+    quit:task.%TaskStatus.IsComplete $$$OK
+    do task.%FormValues.SetAt(note, "Note")
+    set sc = task.CompleteTask("Resolved")
+    quit:$$$ISERR(sc) sc
+    quit task.%Save()
 }
 
 }

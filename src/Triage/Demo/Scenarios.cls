@@ -110,6 +110,9 @@ ClassMethod Reset()
 {
     do ##class(Ens.Director).StopProduction(10, 1)
     do ##class(Ens.Director).CleanProduction()
+    // Open Workflow tasks belong to the deleted incidents.
+    do ##class(EnsLib.Workflow.Worklist).%KillExtent()
+    do ##class(EnsLib.Workflow.TaskResponse).%KillExtent()
     do ##class(Ens.MessageHeader).Purge(.deleted, 0, 0, 1)
     do ##class(Ens.Util.Log).Purge(.deleted, 0)
     do ##class(Ens.Director).StartProduction(##class(Triage.Setup).#PRODUCTION)

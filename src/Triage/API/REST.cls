@@ -24,7 +24,7 @@ XData UrlMap [ XMLNamespace = "http://www.intersystems.com/urlmap" ]
 }
 
 /// Fields of an incident returned by the API.
-Parameter FIELDS = "ReplayOf,CreatedAt,SourceConfigName,SessionId,AttemptNumber,AlertText,MessageClass,MessageBody,AgentAction,AgentConfidence,AgentFixType,AgentPatch,AgentRetryAfter,RetryDelay,AgentReason,UpstreamRecommendation,LeaderIncidentId,FinalAction,GuardrailNote,Status,ResendHeaderId,ReviewedBy,ReviewedAt,ReviewNote,OperatorPatch,Model,PromptTokens,CompletionTokens,ReasoningTokens,ToolCalls,AgentDurationMs,AgentError";
+Parameter FIELDS = "ReplayOf,CreatedAt,SourceConfigName,SessionId,AttemptNumber,AlertText,MessageClass,MessageBody,AgentAction,AgentConfidence,AgentFixType,AgentPatch,AgentRetryAfter,RetryDelay,AgentReason,UpstreamRecommendation,LeaderIncidentId,FinalAction,GuardrailNote,Status,ResendHeaderId,TaskRequestId,ReviewedBy,ReviewedAt,ReviewNote,OperatorPatch,Model,PromptTokens,CompletionTokens,ReasoningTokens,ToolCalls,AgentDurationMs,AgentError";
 
 ClassMethod Stats() As %Status
 {

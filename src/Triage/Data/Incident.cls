@@ -74,6 +74,9 @@ Property OperatorPatch As %String(MAXLEN = "");
 
 Property ResendHeaderId As %Integer;
 
+/// The Workflow Engine task request of an escalated incident (EnsLib.Workflow.TaskRequest).
+Property TaskRequestId As %String;
+
 Property Model As %String(MAXLEN = 256);
 
 /// Recording whose calls were replayed, in replay mode (no LLM was called).

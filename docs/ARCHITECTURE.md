@@ -61,6 +61,7 @@ All settings are on `Ens.Alert` (`Triage.Production.TriageProcess`), in the cate
 | `CoalesceWindow` | `120` | Seconds in which the same error signature on the same component reuses an open decision with no LLM call. |
 | `MaxAgentRunsPerMinute` | `10` | LLM budget for the production; alerts above it are escalated. |
 | `AgentTimeout` | `180` | Seconds to wait for `Triage.AgentOperation` before escalating. |
+| `WorkflowTarget` | `Triage.Operators` | `EnsLib.Workflow.Operation` that receives escalations as tasks; empty for none. |
 
 ## Agent Tools and Prompt Safety
 
@@ -142,6 +143,14 @@ The project uses IRIS Interoperability as the tracing layer for its GenAI pipeli
 - For each incident: the agent's reason, the upstream recommendation, the policy note, the patch as a before/after diff, the outcome of the resent message, every tool call with arguments, result and duration, and a link to the Visual Trace.
 - **Approve**, **Reject** and **Mark as resolved** go through `Triage.ReviewService`, so each review is a step of the session. A proposed patch is editable: changed values turn the button into **Approve with my changes**.
 
+## Escalations in the Workflow Engine
+
+When an incident is escalated, `TriageProcess` sends an `EnsLib.Workflow.TaskRequest` to `Triage.Operators`, an `EnsLib.Workflow.Operation` whose role (same name) holds the demo user `_SYSTEM`. The task carries the error, the agent's reason, the upstream recommendation and the policy note, with the action **Resolved** and a **Note** field.
+
+- **Resolved in the IRIS Workflow inbox** (`EnsPortal.WFWorklist.zen`): the task response comes back to `TriageProcess.OnTaskDone` in the same session, which resolves the incident with the note and the user, and adds it to the incident memory.
+- **Resolved in the dashboard or over MCP**: `ReviewService.Resolve` completes the open task with the same note, so it leaves the inbox; `OnTaskDone` then finds the incident already resolved.
+- The task request and its response are steps of the incident's session in the Visual Trace.
+
 ## Measurements
 
 On the ten demo failures with `deepseek/deepseek-v4.1-flash-1017` via OpenRouter:
@@ -173,7 +182,7 @@ The output ends with `All PASSED`.
 `TriageProcess` reads failed messages through class reflection (`%Dictionary.CompiledClass`) and `Ens.MessageHeader`, so it works with any message class:
 
 1. Load `src/Triage` into your namespace (the `Demo` package is optional), index the runbooks with `do ##class(Triage.Knowledge.Base).LoadRunbooks("<path>/runbooks")`, and set the `LLM_*` variables for the IRIS process.
-2. Add `Triage.Production.TriageProcess` named **`Ens.Alert`**, plus `Triage.Production.AgentOperation` (`Triage.AgentOperation`), `Triage.Production.EscalationOperation` (`Triage.EscalationOperation`), `Triage.Service.ReviewService` (`Triage.ReviewService`) and `Ens.Alarm`.
+2. Add `Triage.Production.TriageProcess` named **`Ens.Alert`**, plus `Triage.Production.AgentOperation` (`Triage.AgentOperation`), `Triage.Production.EscalationOperation` (`Triage.EscalationOperation`), `Triage.Service.ReviewService` (`Triage.ReviewService`), `Ens.Alarm`, and optionally `EnsLib.Workflow.Operation` (`Triage.Operators`, see `Triage.Setup.CreateWorkflowRole`).
 3. Set `AlertOnError = 1` on the operations to watch (and `AlertRetryGracePeriod` if they use `FailureTimeout`).
 4. Choose `AutoFixFields` and `ProtectedFields` for your data.
 
@@ -209,7 +218,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Service/             ReviewService (human reviews as steps of the production)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (83 assertions)
+  Test/PolicyTest.cls  %UnitTest suite (87 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode

@@ -22,7 +22,25 @@ ClassMethod Install() As %Status
     // The demo operations authenticate to the fake ERP and WMS with these interoperability credentials.
     set sc = ##class(Ens.Config.Credentials).SetCredential("DemoTargets", "_SYSTEM", "SYS", 1)
     quit:$$$ISERR(sc) sc
+    set sc = ..CreateWorkflowRole()
+    quit:$$$ISERR(sc) sc
     quit ##class(Ens.Director).SetAutoStart(..#PRODUCTION)
+}
+
+/// The Workflow Engine role that receives escalated incidents as tasks (the name of the workflow
+/// operation in the production), with the demo user as its member.
+ClassMethod CreateWorkflowRole(role As %String = "Triage.Operators", user As %String = "_SYSTEM") As %Status
+{
+    if '##class(EnsLib.Workflow.RoleDefinition).%ExistsId(role) {
+        set sc = ##class(EnsLib.Workflow.RoleDefinition).CreateRole(role)
+        quit:$$$ISERR(sc) sc
+    }
+    if '##class(EnsLib.Workflow.UserDefinition).%ExistsId(user) {
+        set sc = ##class(EnsLib.Workflow.UserDefinition).CreateUser(user)
+        quit:$$$ISERR(sc) sc
+    }
+    quit:##class(EnsLib.Workflow.RoleMembership).%ExistsId(role _ "||" _ user) $$$OK
+    quit ##class(EnsLib.Workflow.RoleDefinition).AddUserToRole(role, user)
 }
 
 /// Creates the web applications: /triage serves the static dashboard page (no data in it),
