@@ -20,7 +20,7 @@ Method %LogExecution(call As %DynamicObject, metadata As %DynamicObject, result 
     quit log.%Save()
 }
 
-/// The call's arguments as an object: the audit hooks receive them as a JSON string (ai-hub-eap#40), the authorization policy as an object.
+/// The call's arguments as an object: the audit hooks receive them as a JSON string (ai-hub-eap-bugreports#14), the authorization policy as an object.
 ClassMethod Arguments(call As %DynamicObject) As %DynamicObject
 {
     set args = call.arguments

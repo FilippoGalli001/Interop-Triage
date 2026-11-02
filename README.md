@@ -156,7 +156,7 @@ In Git Bash on Windows, prefix the command with `MSYS_NO_PATHCONV=1`. Then ask C
 Built and verified on build `2026.3.0AI.154.0`.
 
 - **Worked well:** declarative provider and key from `.env`, tools from class method signatures, authorization and audit policies on a toolset, loop detection, and RAG with no external service.
-- **Needed workarounds:** no structured-output option on `%AI.Agent`, `AddDocument` does not split long texts, provider-dependent `Usage` keys, tool arguments of a different type in audit and authorization policies ([ai-hub-eap#40](https://github.com/intersystems-community/ai-hub-eap/issues/40)), and an `iris-mcp-server` 2.0.0 issue with current Claude Code versions, reported as [ai-hub-eap#39](https://github.com/intersystems-community/ai-hub-eap/issues/39).
+- **Needed workarounds:** no structured-output option on `%AI.Agent`, `AddDocument` does not split long texts, provider-dependent `Usage` keys, tool arguments of a different type in audit and authorization policies ([ai-hub-eap-bugreports#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14)), and an `iris-mcp-server` 2.0.0 issue with current Claude Code versions, reported as [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13).
 
 Every observation with its workaround, and what we would like to see: [docs/AIHUB-FEEDBACK.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/AIHUB-FEEDBACK.md).
 
