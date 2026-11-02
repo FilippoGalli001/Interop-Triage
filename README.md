@@ -160,6 +160,8 @@ Built and verified on build `2026.3.0AI.154.0`.
 
 Every observation with its workaround, and what we would like to see: [docs/AIHUB-FEEDBACK.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/AIHUB-FEEDBACK.md).
 
+Embedded Python on the same build: a Python `False` passed to an ObjectScript `%Boolean` argument arrives as an object reference, so it is true ([python-bugreports#28](https://github.com/intersystems-community/python-bugreports/issues/28)), and `iris.gref` silently drops `None` subscripts, so `kill(['orders', None])` kills all of `^G("orders")` ([python-bugreports#29](https://github.com/intersystems-community/python-bugreports/issues/29)).
+
 ---
 
 ## More
