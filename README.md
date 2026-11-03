@@ -82,6 +82,16 @@ After **Quick demo**, **SO-1003** waits for approval: the agent turned `21/11/20
 
 With **Run demo**, approve SO-1003 the same way and then press **Run follow-up**: SO-1103, from the same customer, cites your review.
 
+### The LLM Pipeline in the Visual Trace
+
+For [Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689), after any demo:
+
+1. Open an incident in the dashboard and follow its **Visual Trace** link.
+2. Click the `Triage.Msg.TriageDecision` response of `Triage.AgentOperation`: next to the action and the reason, it shows the model, prompt, completion and reasoning tokens, duration, and every tool call in order with its arguments and duration, including the IRIS Vector Search queries (`search_runbooks`, `search_incidents`).
+3. The same session holds the failed message, the agent run, your review and the resend.
+
+In replay mode the model field names the recording and no tokens are spent; with a key you see the live values.
+
 ---
 
 ## Demo Scenarios
