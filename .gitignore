@@ -10,6 +10,7 @@ DEVLOG.md
 docs/*
 !docs/ARCHITECTURE.md
 !docs/AIHUB-FEEDBACK.md
+!docs/EVALUATION.md
 .iris-agentic-dev.toml
 
 # Logo kit, kept locally
