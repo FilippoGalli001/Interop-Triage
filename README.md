@@ -51,7 +51,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
 | Workflow inbox | [_DeepSee.UserPortal.Workflow.zen](http://localhost:52773/csp/triage/_DeepSee.UserPortal.Workflow.zen) (escalations to accept and resolve) |
 
-**Check** the 87 `%UnitTest` assertions and the MCP server:
+**Check** the 93 `%UnitTest` assertions and the MCP server:
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"   # ends with All PASSED
@@ -136,7 +136,7 @@ flowchart TD
     REV --> TP
 ```
 
-- **Read-only tools, scoped by AI Hub policies.** Eight tools: event log, component settings with secrets redacted, attempt history, similar failures, exact error-code lookup, runbook and incident search, and `submit_decision`, the only way to answer. `%AI.Policy.Authorization` (`ScopePolicy`) denies any call outside the current incident, and payloads and error texts reach the model escaped, as untrusted data.
+- **Read-only tools, scoped by AI Hub policies.** Eight tools: event log, component settings with secrets redacted, attempt history, similar failures, exact error-code lookup, runbook and incident search, and `submit_decision`, the only way to answer. `%AI.Policy.Authorization` (`ScopePolicy`) denies any call outside the current incident, and payloads and error texts reach the model escaped, as untrusted data: a test hides instructions in both, and if the model obeyed them the rules would still hold the discard for a person and refuse the change of a protected id.
 - **Native retries first.** The operations keep their usual `RetryInterval` and `FailureTimeout`, so short blips never reach the agent. A longer outage leaves the queue after `FailureTimeout`, freeing the messages behind it, and the agent picks the delay from the evidence. A `Retry-After` from the target, in seconds or as an HTTP date (parsed with Embedded Python), is a minimum the rules enforce.
 - **Rules decide.** A proposal runs automatically only if its action is in `AutoActions`, its confidence reaches `MinConfidence`, and any patch is a `normalization` touching only `AutoFixFields`. Anything else waits for a person; unknown actions, invalid patches and protected fields (`OrderId`, `CustomerId`, `Sku`) are escalated. The rules check the fields, not just the model's own label: `gemini-2.5-flash` once called the date reordering a normalization, and it still went to approval.
 - **Memory of people's decisions.** Runbooks and reviewed incidents are two `%AI.RAG.KnowledgeBase`s on FastEmbed and IRIS Vector Search, inside the container. Only incidents reviewed by a person, with their note, are remembered; automatic decisions never are.
