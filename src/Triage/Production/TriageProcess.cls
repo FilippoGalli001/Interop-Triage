@@ -214,6 +214,9 @@ Method ReuseLeaderDecision(incident As Triage.Data.Incident) As %Boolean
     quit:SQLCODE'=0 0
 
     set leader = ##class(Triage.Data.Incident).%OpenId(leaderId)
+    // The signature hides quoted values, so 'JPY' and 'EUR - ...' look alike: an escalation is
+    // reused only for the same values, while a retry (an outage) is reused for any message.
+    quit:((leader.FinalAction = "ESCALATE") && '##class(Triage.Data.Incident).SameQuotedValues(leader.AlertText, incident.AlertText)) 0
     set incident.LeaderIncidentId = leaderId
     set incident.AgentAction = leader.FinalAction
     set incident.AgentConfidence = leader.AgentConfidence

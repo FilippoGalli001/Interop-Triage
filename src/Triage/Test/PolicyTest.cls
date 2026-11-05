@@ -131,6 +131,16 @@ Method TestSignature()
     do $$$AssertTrue(a["#6059", "the error code is kept: " _ a)
     set c = ##class(Triage.Data.Incident).Signature("Other.Op", "ERROR #6059: socket to erp:8443 failed for order 'SO-1002' after 15 seconds")
     do $$$AssertNotEquals(a, c, "another component has another signature")
+    // Found by the held-out evaluation: 'JPY' and 'EUR - ...' share a signature, but an escalation
+    // of one must not decide the other. An outage quoting another order id is still the same error.
+    set jpy = "HTTP 422 Unprocessable Entity from ERP: unsupported currency 'JPY' (supported: EUR,USD,GBP,CHF)"
+    set eur = "HTTP 422 Unprocessable Entity from ERP: unsupported currency 'EUR - x' (supported: EUR,USD,GBP,CHF)"
+    do $$$AssertEquals(##class(Triage.Data.Incident).Signature("Demo.ERP", jpy), ##class(Triage.Data.Incident).Signature("Demo.ERP", eur), "two bad currencies share a signature")
+    do $$$AssertNotTrue(##class(Triage.Data.Incident).SameQuotedValues(jpy, eur), "but a client error is the same only with the same values")
+    do $$$AssertTrue(##class(Triage.Data.Incident).SameQuotedValues(jpy, jpy), "the same value is the same error")
+    set o1 = "ERROR #6059: socket to erp:8443 failed for order 'SO-1002' after 15 seconds"
+    set o2 = "ERROR #6059: socket to erp:8443 failed for order 'SO-1007' after 15 seconds"
+    do $$$AssertTrue(##class(Triage.Data.Incident).SameQuotedValues(o1, o2), "an outage is the same error for any order")
 }
 
 Method TestScopePolicy()

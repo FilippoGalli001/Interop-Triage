@@ -40,7 +40,14 @@ ClassMethod SetCoalesceWindow(seconds As %Integer) As %Status
     quit:'$isobject(production) $$$ERROR($$$GeneralError, "Production not found")
     set item = production.FindItemByConfigName("Ens.Alert")
     quit:'$isobject(item) $$$ERROR($$$GeneralError, "Ens.Alert not found")
-    do item.UpdateSetting("CoalesceWindow", "Host", seconds)
+    set setting = item.FindSettingByName("CoalesceWindow", "Host")
+    if $isobject(setting) {
+        set setting.Value = seconds
+    } else {
+        set setting = ##class(Ens.Config.Setting).%New()
+        set setting.Name = "CoalesceWindow", setting.Target = "Host", setting.Value = seconds
+        do item.Settings.Insert(setting)
+    }
     set sc = production.%Save()
     quit:$$$ISERR(sc) sc
     quit ##class(Ens.Director).UpdateProduction(30, 1)

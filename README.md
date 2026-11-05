@@ -27,7 +27,7 @@ The agent cannot change or resend anything itself. Deterministic, unit-tested ru
 
 - Docker with Compose v2.
 - The AI Hub Early Access image, build 154, community edition: `iris-community-2026.3.0AI.154.0-docker.tar.gz` from the [InterSystems Early Access Portal](https://evaluation.intersystems.com/Eval/early-access/AIHub) (program **AI Hub**).
-  The portal now offers build 109 instead (`iris-community-2027.1.0AI.109.0-docker.tar.gz`): it also works. Load it and put `IRIS_IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2027.1.0AI.109.0` in `.env`. On build 109 we checked the build, the 93 assertions, the dashboard, the Workflow inbox and the whole demo in replay mode and in live mode (OpenRouter + DeepSeek: the 10 expected decisions, then the follow-up citing the operator's note), and the MCP server (6 tools, an approval through MCP).
+  The portal now offers build 109 instead (`iris-community-2027.1.0AI.109.0-docker.tar.gz`): it also works. Load it and put `IRIS_IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2027.1.0AI.109.0` in `.env`. On build 109 we checked the build, the unit tests, the dashboard, the Workflow inbox and the whole demo in replay mode and in live mode (OpenRouter + DeepSeek: the 10 expected decisions, then the follow-up citing the operator's note), and the MCP server (6 tools, an approval through MCP).
 - Internet access during the build, once: FastEmbed downloads its embedding model.
 - Optional: an LLM API key. Without one, the agent runs in [replay mode](#try-it).
 
@@ -52,7 +52,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
 | Workflow inbox | [_DeepSee.UserPortal.Workflow.zen](http://localhost:52773/csp/triage/_DeepSee.UserPortal.Workflow.zen) (escalations to accept and resolve) |
 
-**Check** the 93 `%UnitTest` assertions and the MCP server:
+**Check** the 97 `%UnitTest` assertions and the MCP server:
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"   # ends with All PASSED
@@ -144,7 +144,7 @@ flowchart TD
 - **Everything is traced, inside IRIS.** Interoperability is the tracing layer for the LLM pipeline ([Community Idea DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689)): the failed message, the agent run, the review and the retry are steps of one Visual Trace session, and the agent's step carries the model, tokens, duration and every tool call, including the IRIS Vector Search queries. No external tracing service, so prompts and payloads stay in IRIS, and the trace leads to an action: approve, change the patch, resend. Details in [ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md#tracing-the-llm-pipeline).
 - **Escalations are Workflow Engine tasks.** Each escalated incident is also an `EnsLib.Workflow` task for the role `Triage.Operators`, with the error, the agent's diagnosis and the fix it suggests. Resolving it in the IRIS Workflow inbox, in the dashboard or over MCP closes both, and the note joins the agent's memory.
 - **Alert storms cost one decision.** Failures with the same error signature on the same component within `CoalesceWindow` reuse the open decision with no LLM call, and their retries are staggered (`RetryStagger`).
-- **Measured.** On the ten demo failures with `deepseek-v4.1-flash`: 10/10 expected decisions, ~6–9 s and ~4–5k input tokens per decision; in replay mode ~30–400 ms and no tokens.
+- **Measured, also on failures it was not tuned on.** On the ten demo failures with `deepseek-v4.1-flash`: 10/10 expected decisions, ~6–9 s and ~4–5k input tokens per decision; in replay mode ~30–400 ms and no tokens. On ten new failures whose expected outcomes were committed before the run (an ambiguous date, an unsupported currency, a duplicate id with other content, an instruction hidden in a field, ...): 10/10 as expected, 0 unsafe, ~12 s per decision. The run also found a coalescing gap, now fixed. Cases, results and limits: [docs/EVALUATION.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/EVALUATION.md).
 
 All thresholds are production settings on `Ens.Alert`, under **Autonomy**, **Retry** and **Cost**. Details: [docs/ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md).
 
@@ -178,6 +178,7 @@ Embedded Python on the same build: a Python `False` passed to an ObjectScript `%
 ## More
 
 - [docs/ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md): agent tools, rules, settings, memory, MCP, dashboard, measurements, tests, and how to plug the triage into your own production.
+- [docs/EVALUATION.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/EVALUATION.md): ten failures not in the demo, expected outcomes committed before the live run, results and limits.
 - Limitations: early access APIs may change; replay mode covers the 11 recorded failures, and new ones are escalated without a key; demo credentials (`_SYSTEM` / `SYS`) are for local use only.
 - AI coding assistants (Claude Code, Gemini) and [IRIS Agentic Dev](https://github.com/intersystems-community/iris-agentic-dev) were used during development; design, scenarios and every verification run on build 154 were directed by the author.
 

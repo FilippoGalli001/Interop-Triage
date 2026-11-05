@@ -58,7 +58,7 @@ All settings are on `Ens.Alert` (`Triage.Production.TriageProcess`), in the cate
 | `MaxAttempts` | `3` | Resends per root message before forcing escalation. |
 | `MinRetryDelay` / `MaxRetryDelay` | `10` / `3600` | Limits for the retry delay, in seconds. |
 | `RetryStagger` | `5` | Extra seconds per coalesced incident, so a recovering target is not flooded. |
-| `CoalesceWindow` | `120` | Seconds in which the same error signature on the same component reuses an open decision with no LLM call. |
+| `CoalesceWindow` | `120` | Seconds in which the same error signature on the same component reuses an open decision with no LLM call. An escalation of a client error (HTTP 4xx) is reused only when the quoted values that failed are the same. |
 | `MaxAgentRunsPerMinute` | `10` | LLM budget for the production; alerts above it are escalated. |
 | `AgentTimeout` | `180` | Seconds to wait for `Triage.AgentOperation` before escalating. |
 | `WorkflowTarget` | `Triage.Operators` | `EnsLib.Workflow.Operation` that receives escalations as tasks; empty for none. |
@@ -218,7 +218,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Service/             ReviewService (human reviews as steps of the production)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (93 assertions)
+  Test/PolicyTest.cls  %UnitTest suite (97 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode

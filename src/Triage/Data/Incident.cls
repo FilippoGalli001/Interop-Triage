@@ -106,6 +106,24 @@ ClassMethod Signature(source As %String, text As %String) As %String
     quit $extract(source _ "|" _ text, 1, 1000)
 }
 
+/// In a client error (HTTP 4xx) the quoted values are the data that failed ('JPY', 'Rom02'), so two
+/// such errors are the same only with the same values. Other errors (an outage, a timeout) quote ids
+/// of the single message, which do not matter.
+ClassMethod SameQuotedValues(a As %String, b As %String) As %Boolean
+{
+    quit:'##class(%Regex.Matcher).%New("HTTP 4\d\d", a).Locate() 1
+    quit ..QuotedValues(a) = ..QuotedValues(b)
+}
+
+ClassMethod QuotedValues(text As %String) As %List
+{
+    set values = "", matcher = ##class(%Regex.Matcher).%New("'[^']*'", text)
+    while matcher.Locate() {
+        set values = values _ $listbuild(matcher.Group)
+    }
+    quit values
+}
+
 /// Forgets a partial agent run, so that it can start again from scratch.
 Method ClearDecision() As %Status
 {
