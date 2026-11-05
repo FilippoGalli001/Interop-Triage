@@ -188,7 +188,7 @@ Where each [technology bonus](https://community.intersystems.com/node/586773) is
 | Community Idea [DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689) | 4 | the agent's step in the Visual Trace carries model, tokens, duration and every tool call: [Triage/Msg/TriageDecision.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Msg/TriageDecision.cls), steps in [The LLM Pipeline in the Visual Trace](#the-llm-pipeline-in-the-visual-trace) |
 | Bugs in AI Hub | 2 + 1 | [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13) (`iris-mcp-server`, still on build 109), [#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14) (`call.arguments` type in policies) |
 | Bugs in Embedded Python | 2 + 1 | [python-bugreports#28](https://github.com/intersystems-community/python-bugreports/issues/28) (`False` to a `%Boolean` argument), [#29](https://github.com/intersystems-community/python-bugreports/issues/29) (`None` subscripts in `iris.gref`) |
-| Article on Developer Community | 2 | [The AI Proposes, the Code Decides: Building a Governed Triage Agent with IRIS Interoperability and AI Hub](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) |
+| Article on Developer Community | 2 | [The AI Proposes, the Code Decides: Building a Governed Triage Agent for IRIS Interoperability on AI Hub](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) |
 | Video on YouTube | 3 | [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) |
 
 ---
