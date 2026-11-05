@@ -27,7 +27,7 @@ The agent cannot change or resend anything itself. Deterministic, unit-tested ru
 
 - Docker with Compose v2.
 - The AI Hub Early Access image, build 154, community edition: `iris-community-2026.3.0AI.154.0-docker.tar.gz` from the [InterSystems Early Access Portal](https://evaluation.intersystems.com/Eval/early-access/AIHub) (program **AI Hub**).
-  The portal now offers build 109 instead (`iris-community-2027.1.0AI.109.0-docker.tar.gz`): it also works. Load it and put `IRIS_IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2027.1.0AI.109.0` in `.env`. On build 109 we checked the build, the 93 assertions, the dashboard, the Workflow inbox and the whole demo in replay mode, approvals and follow-up included; live mode was tested on 154 only.
+  The portal now offers build 109 instead (`iris-community-2027.1.0AI.109.0-docker.tar.gz`): it also works. Load it and put `IRIS_IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/iris-community:2027.1.0AI.109.0` in `.env`. On build 109 we checked the build, the 93 assertions, the dashboard, the Workflow inbox and the whole demo in replay mode and in live mode (OpenRouter + DeepSeek: the 10 expected decisions, then the follow-up citing the operator's note).
 - Internet access during the build, once: FastEmbed downloads its embedding model.
 - Optional: an LLM API key. Without one, the agent runs in [replay mode](#try-it).
 
