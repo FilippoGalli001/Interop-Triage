@@ -175,6 +175,23 @@ Embedded Python on the same build: a Python `False` passed to an ObjectScript `%
 
 ---
 
+## Contest Bonuses
+
+Where each [technology bonus](https://community.intersystems.com/node/586773) is in the project. Whether it counts is up to the organizers.
+
+| Bonus | Points | Where |
+| --- | --- | --- |
+| Docker container | 2 | [Dockerfile](https://github.com/FilippoGalli001/Interop-Triage/blob/main/Dockerfile) and [docker-compose.yml](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docker-compose.yml): `docker compose up -d --build` |
+| IRIS Vector Search | 2 | runbook and incident search through `%AI.RAG.KnowledgeBase` on `%AI.RAG.VectorStore.IRIS`: [Triage/Knowledge/Base.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Knowledge/Base.cls) |
+| Embedded Python | 3 | `Triage.Policy.SecondsUntil` (`[ Language = python ]`, `email.utils`) turns a `Retry-After` HTTP date into seconds: [Triage/Policy.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Policy.cls) |
+| Workflow Engine | 2 | every escalation is a task for the role `Triage.Operators` (`EnsLib.Workflow.Operation`), closed from the inbox or the dashboard: `OpenTask` and `OnTaskDone` in [Triage/Production/TriageProcess.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Production/TriageProcess.cls) |
+| Community Idea [DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689) | 4 | the agent's step in the Visual Trace carries model, tokens, duration and every tool call: [Triage/Msg/TriageDecision.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Msg/TriageDecision.cls), steps in [The LLM Pipeline in the Visual Trace](#the-llm-pipeline-in-the-visual-trace) |
+| Bugs in AI Hub | 2 + 1 | [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13) (`iris-mcp-server`, still on build 109), [#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14) (`call.arguments` type in policies) |
+| Bugs in Embedded Python | 2 + 1 | [python-bugreports#28](https://github.com/intersystems-community/python-bugreports/issues/28) (`False` to a `%Boolean` argument), [#29](https://github.com/intersystems-community/python-bugreports/issues/29) (`None` subscripts in `iris.gref`) |
+| Video on YouTube | 3 | [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) |
+
+---
+
 ## More
 
 - [docs/ARCHITECTURE.md](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docs/ARCHITECTURE.md): agent tools, rules, settings, memory, MCP, dashboard, measurements, tests, and how to plug the triage into your own production.
