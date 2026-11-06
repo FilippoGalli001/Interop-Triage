@@ -37,4 +37,12 @@ ClassMethod Env(name As %String, default As %String = "") As %String
     quit $select(value = "": default, 1: value)
 }
 
+/// An error text cut to max characters. Some provider errors repeat every failed attempt and run to
+/// tens of kilobytes: the start says what happened.
+ClassMethod Short(text As %String, max As %Integer = 500) As %String
+{
+    quit:$length(text)<=max text
+    quit $extract(text, 1, max - 1) _ $char(8230)
+}
+
 }

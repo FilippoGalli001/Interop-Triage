@@ -90,7 +90,7 @@ Method Analyze(incident As Triage.Data.Incident) As %Status
     // The agent operation saved its decision on the incident: discard our stale copy.
     do incident.%Reload()
     if $$$ISERR(sc) || '$isobject(decision) {
-        quit ..Escalate(incident, "Agent unavailable: " _ $select($$$ISERR(sc): $system.Status.GetErrorText(sc), 1: "no response"))
+        quit ..Escalate(incident, "Agent unavailable: " _ $select($$$ISERR(sc): ##class(Triage.Util).Short($system.Status.GetErrorText(sc)), 1: "no response"))
     }
     quit $$$OK
 }
@@ -319,7 +319,9 @@ ClassMethod TaskMessage(incident As Triage.Data.Incident) As %String
     set text = "Error: " _ incident.AlertText _ nl _ nl _ "Agent: " _ incident.AgentReason
     set:incident.UpstreamRecommendation'="" text = text _ nl _ nl _ "Fix the cause: " _ incident.UpstreamRecommendation
     set:incident.GuardrailNote'="" text = text _ nl _ nl _ "Rules: " _ incident.GuardrailNote
-    quit text _ nl _ nl _ "Choose Resolved with a note on what you did: the note becomes part of the agent's memory."
+    // The task message holds 2000 characters: the instruction at the end is always kept.
+    set footer = nl _ nl _ "Choose Resolved with a note on what you did: the note becomes part of the agent's memory."
+    quit ##class(Triage.Util).Short(text, 2000 - $length(footer)) _ footer
 }
 
 /// A workflow task was completed. Resolved from the inbox: the incident is resolved with the

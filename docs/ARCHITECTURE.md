@@ -181,7 +181,7 @@ With Gemini's free tier (20 requests a day per model) use **Quick demo**: a full
 
 ## Tests
 
-`Triage.Test.PolicyTest` has 97 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), the tool-call trace, error signatures, secret redaction, session isolation, prompt injection, replay mode, operator patches and the MCP note requirement. `Triage.Test.WatchTest` has 19 more on the failed message watch: which components are watched, `MinAge`, a failure reported once, a failure with an alert left to the alert path, and the alert text taken from the event log.
+`Triage.Test.PolicyTest` has 99 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), the tool-call trace, error signatures, secret redaction, session isolation, prompt injection, replay mode, operator patches, the MCP note requirement and Workflow tasks that fit their 2000 characters. `Triage.Test.WatchTest` has 19 more on the failed message watch: which components are watched, `MinAge`, a failure reported once, a failure with an alert left to the alert path, and the alert text taken from the event log.
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"
@@ -231,7 +231,7 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Adapter/             FailedMessageAdapter (Ens.InboundAdapter: failed messages that raised no alert)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/                %UnitTest suites PolicyTest and WatchTest (116 assertions)
+  Test/                %UnitTest suites PolicyTest and WatchTest (118 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode

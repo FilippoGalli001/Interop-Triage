@@ -123,11 +123,11 @@ ClassMethod Decide(incidentId As %Integer) As %Status
         // The decision was recorded before the error (for example a rate limit on the closing
         // LLM call): it stands.
         if incident.AgentAction '= "" {
-            set incident.AgentError = "After the decision: " _ $system.Status.GetErrorText(sc)
+            set incident.AgentError = "After the decision: " _ ##class(Triage.Util).Short($system.Status.GetErrorText(sc))
             set sc = $$$OK
         }
     }
-    set:$$$ISERR(sc) incident.AgentError = $system.Status.GetErrorText(sc)
+    set:$$$ISERR(sc) incident.AgentError = ##class(Triage.Util).Short($system.Status.GetErrorText(sc))
     set sc2 = incident.%Save()
     // A clean live decision becomes the recording that replay mode uses for this kind of failure.
     if $$$ISOK(sc) && $$$ISOK(sc2) && (incident.AgentError = "") {
@@ -194,7 +194,7 @@ ClassMethod Replay(incident As Triage.Data.Incident) As %Status
         set sc = ex.AsStatus()
         do incident.%Reload()
     }
-    set:$$$ISERR(sc) incident.AgentError = $system.Status.GetErrorText(sc)
+    set:$$$ISERR(sc) incident.AgentError = ##class(Triage.Util).Short($system.Status.GetErrorText(sc))
     set sc2 = incident.%Save()
     quit $select($$$ISERR(sc): sc, 1: sc2)
 }

@@ -225,6 +225,11 @@ Method TestWorkflowTask()
     do $$$AssertTrue((message [ "HTTP 409") && (message [ "BR-12"), "the task carries the error and the agent's diagnosis")
     do $$$AssertTrue(message [ "Fix the cause: Validate the amount", "and the fix the agent suggests")
     do $$$AssertStatusOK(##class(Triage.Service.ReviewService).CloseTask(incident, "note"), "an incident without a task closes nothing")
+    // A provider error can run to kilobytes: the task message still fits its 2000 characters.
+    set incident.GuardrailNote = "Agent unavailable: " _ $translate($justify("", 30000), " ", "x")
+    set message = ##class(Triage.Production.TriageProcess).TaskMessage(incident)
+    do $$$AssertTrue(($length(message) <= 2000) && (message [ "Choose Resolved"), "a long note is cut, the instruction stays: " _ $length(message))
+    do $$$AssertEquals($length(##class(Triage.Util).Short($justify("", 30000))), 500, "an error text is cut to 500 characters")
 }
 
 /// A partner hides instructions in the payload and in the error text: they stay inside the

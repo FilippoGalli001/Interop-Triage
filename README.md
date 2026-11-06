@@ -54,7 +54,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
 | Workflow inbox | [_DeepSee.UserPortal.Workflow.zen](http://localhost:52773/csp/triage/_DeepSee.UserPortal.Workflow.zen) (escalations to accept and resolve) |
 
-**Check** the 116 `%UnitTest` assertions and the MCP server:
+**Check** the 118 `%UnitTest` assertions and the MCP server:
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"   # ends with All PASSED
