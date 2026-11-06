@@ -15,6 +15,8 @@ When a business operation fails, IRIS sends an alert to `Ens.Alert`. Here `Ens.A
 | `DISCARD`        | drop an exact duplicate                                                         |
 | `ESCALATE`       | hand the failure to an operator, with the cause and a fix for the source system |
 
+A component sends that alert only with `AlertOnError` on, and it is off by default. For the others, `Triage.FailedMessageWatch`, a business service on a custom inbound adapter, finds their failed messages in `Ens.MessageHeader` and reports them to the same triage.
+
 The agent cannot change or resend anything itself. Deterministic, unit-tested rules (`Triage.Policy`) decide whether a proposal runs at once, waits for an operator, or is escalated. Operators review from a dashboard served by IRIS or from their own AI assistant over MCP.
 
 **Demo video:** [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) · **Article:** [Developer Community](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) · **Open Exchange:** [Interop-Triage](https://openexchange.intersystems.com/package/Interop-Triage)
@@ -52,7 +54,7 @@ The build takes about a minute; then `docker ps` shows `iris-triage` as `healthy
 | Message Viewer | [EnsPortal.MessageViewer.zen](http://localhost:52773/csp/triage/EnsPortal.MessageViewer.zen?$NAMESPACE=TRIAGE)       |
 | Workflow inbox | [_DeepSee.UserPortal.Workflow.zen](http://localhost:52773/csp/triage/_DeepSee.UserPortal.Workflow.zen) (escalations to accept and resolve) |
 
-**Check** the 97 `%UnitTest` assertions and the MCP server:
+**Check** the 116 `%UnitTest` assertions and the MCP server:
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"   # ends with All PASSED
@@ -113,6 +115,8 @@ Two demo systems, orders to an ERP and stock movements to a warehouse (WMS), sen
 | SO-1008             | short 502                                         | recovered by the operation's own retries, no alert               |
 | SO-1103 (follow-up) | same date format as SO-1003                       | the proposal cites the operator's earlier review                 |
 
+**Failures without an alert.** `do ##class(Triage.Demo.Scenarios).RunSilent()` turns `AlertOnError` off on `Demo.WMS` for a few seconds, and SKU-101 and SKU-999 fail there again with no alert. About 15 seconds later `Triage.FailedMessageWatch` finds both and reports them, and they end as in the table: `MIL01` resent automatically, SKU-999 escalated. It also works in replay mode: the report carries the error the component logged, the same text as its alert, so the same recordings apply.
+
 ---
 
 ## How It Works
@@ -123,6 +127,7 @@ flowchart TD
     SS["Demo.StockService"] --> WMS["Demo.WMS"]
     ERP -.->|Ens.AlertRequest| TP
     WMS -.->|Ens.AlertRequest| TP
+    FW["Triage.FailedMessageWatch (custom inbound adapter)"] -.->|failures with no alert| TP
 
     TP["Ens.Alert (Triage.Production.TriageProcess)"] -->|failure| AG
     subgraph AIHub["Triage.AgentOperation"]
@@ -184,6 +189,7 @@ Where each [technology bonus](https://community.intersystems.com/node/586773) is
 | Docker container | 2 | [Dockerfile](https://github.com/FilippoGalli001/Interop-Triage/blob/main/Dockerfile) and [docker-compose.yml](https://github.com/FilippoGalli001/Interop-Triage/blob/main/docker-compose.yml): `docker compose up -d --build` |
 | IRIS Vector Search | 2 | runbook and incident search through `%AI.RAG.KnowledgeBase` on `%AI.RAG.VectorStore.IRIS`: [Triage/Knowledge/Base.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Knowledge/Base.cls) |
 | Embedded Python | 3 | `Triage.Policy.SecondsUntil` (`[ Language = python ]`, `email.utils`) turns a `Retry-After` HTTP date into seconds: [Triage/Policy.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Policy.cls) |
+| Custom inbound adapter | 2 | `Triage.Adapter.FailedMessageAdapter` (`Ens.InboundAdapter`) finds failed messages that raised no alert, and `Triage.FailedMessageWatch` reports them to the triage: [Triage/Adapter/FailedMessageAdapter.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Adapter/FailedMessageAdapter.cls), [Triage/Service/FailedMessageWatch.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Service/FailedMessageWatch.cls) |
 | Workflow Engine | 2 | every escalation is a task for the role `Triage.Operators` (`EnsLib.Workflow.Operation`), closed from the inbox or the dashboard: `OpenTask` and `OnTaskDone` in [Triage/Production/TriageProcess.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Production/TriageProcess.cls) |
 | Community Idea [DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689) | 4 | the agent's step in the Visual Trace carries model, tokens, duration and every tool call: [Triage/Msg/TriageDecision.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Msg/TriageDecision.cls), steps in [The LLM Pipeline in the Visual Trace](#the-llm-pipeline-in-the-visual-trace) |
 | Bugs in AI Hub | 2 + 1 | [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13) (`iris-mcp-server`, still on build 109), [#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14) (`call.arguments` type in policies) |

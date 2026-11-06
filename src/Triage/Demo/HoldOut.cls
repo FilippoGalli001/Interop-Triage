@@ -36,21 +36,7 @@ ClassMethod Restore() As %Status
 
 ClassMethod SetCoalesceWindow(seconds As %Integer) As %Status
 {
-    set production = ##class(Ens.Config.Production).%OpenId(##class(Triage.Setup).#PRODUCTION)
-    quit:'$isobject(production) $$$ERROR($$$GeneralError, "Production not found")
-    set item = production.FindItemByConfigName("Ens.Alert")
-    quit:'$isobject(item) $$$ERROR($$$GeneralError, "Ens.Alert not found")
-    set setting = item.FindSettingByName("CoalesceWindow", "Host")
-    if $isobject(setting) {
-        set setting.Value = seconds
-    } else {
-        set setting = ##class(Ens.Config.Setting).%New()
-        set setting.Name = "CoalesceWindow", setting.Target = "Host", setting.Value = seconds
-        do item.Settings.Insert(setting)
-    }
-    set sc = production.%Save()
-    quit:$$$ISERR(sc) sc
-    quit ##class(Ens.Director).UpdateProduction(30, 1)
+    quit ##class(Triage.Demo.Scenarios).SetHostSetting("Ens.Alert", "CoalesceWindow", seconds)
 }
 
 ClassMethod Send(orders As %List) As %Status

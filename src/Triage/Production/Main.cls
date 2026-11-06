@@ -5,7 +5,7 @@ Class Triage.Production.Main Extends Ens.Production
 XData ProductionDefinition
 {
 <Production Name="Triage.Production.Main" TestingEnabled="true" LogGeneralTraceEvents="false">
-  <Description>Orders flow to a fake ERP and stock updates to a fake WMS. Failed messages raise alerts that an AI Hub agent triages.</Description>
+  <Description>Orders flow to a fake ERP and stock updates to a fake WMS. Failed messages raise alerts that an AI Hub agent triages; Triage.FailedMessageWatch reports those that raise none.</Description>
   <ActorPoolSize>2</ActorPoolSize>
   <Item Name="Demo.OrderService" Category="Demo" ClassName="Triage.Demo.InboundService" PoolSize="0" Enabled="true">
     <Setting Target="Host" Name="TargetConfigName">Demo.ERP</Setting>
@@ -47,6 +47,9 @@ XData ProductionDefinition
   <Item Name="Ens.Alarm" Category="Triage" ClassName="Ens.Alarm" PoolSize="1" Enabled="true">
   </Item>
   <Item Name="Triage.ReviewService" Category="Triage" ClassName="Triage.Service.ReviewService" PoolSize="0" Enabled="true">
+  </Item>
+  <Item Name="Triage.FailedMessageWatch" Category="Triage" ClassName="Triage.Service.FailedMessageWatch" PoolSize="1" Enabled="true">
+    <Setting Target="Adapter" Name="CallInterval">5</Setting>
   </Item>
 </Production>
 }

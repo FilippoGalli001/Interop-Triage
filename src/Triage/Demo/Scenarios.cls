@@ -65,6 +65,45 @@ ClassMethod RunFollowUp() As %Status
         $listbuild("SO-1105", "C-0042", 150.00, "GBP", "2026-11-12", "same expired token: agent cites the operator's resolution")))
 }
 
+/// Failures that raise no alert: Demo.WMS runs for a moment with AlertOnError off, the default of a
+/// production item, and two stock updates fail there. Triage.FailedMessageWatch finds them in the
+/// message headers after MinAge seconds and reports them to the triage, which handles them as on the
+/// alert path (same error text, so replay mode uses the same recordings).
+ClassMethod RunSilent() As %Status
+{
+    do ..Reset()
+    set sc = ..SetHostSetting("Demo.WMS", "AlertOnError", 0)
+    quit:$$$ISERR(sc) sc
+    write "-- Demo.WMS with AlertOnError off", !
+    set sc = ..SendStock($listbuild(
+        $listbuild("SKU-101", "mil01", 5, "BOX", "warehouse in lower case, no alert: found by the watch, FIX (normalization), automatic"),
+        $listbuild("SKU-999", "MIL01", 3, "EA", "unknown SKU, no alert: found by the watch, ESCALATE")))
+    // Both fail at once (HTTP 422); then the alerts are back on for the other demos.
+    hang 3
+    write "-- Demo.WMS with AlertOnError on again; the watch reports the two failures in about 15 s", !
+    quit $$$ADDSC(sc, ..SetHostSetting("Demo.WMS", "AlertOnError", 1))
+}
+
+/// Changes a Host setting of a production item and applies it to the running production.
+ClassMethod SetHostSetting(itemName As %String, name As %String, value As %String) As %Status
+{
+    set production = ##class(Ens.Config.Production).%OpenId(##class(Triage.Setup).#PRODUCTION)
+    quit:'$isobject(production) $$$ERROR($$$GeneralError, "Production not found")
+    set item = production.FindItemByConfigName(itemName)
+    quit:'$isobject(item) $$$ERROR($$$GeneralError, itemName _ " not found")
+    set setting = item.FindSettingByName(name, "Host")
+    if $isobject(setting) {
+        set setting.Value = value
+    } else {
+        set setting = ##class(Ens.Config.Setting).%New()
+        set setting.Name = name, setting.Target = "Host", setting.Value = value
+        do item.Settings.Insert(setting)
+    }
+    set sc = production.%Save()
+    quit:$$$ISERR(sc) sc
+    quit ##class(Ens.Director).UpdateProduction(30, 1)
+}
+
 ClassMethod SendStock(updates As %List) As %Status
 {
     set sc = ##class(Ens.Director).CreateBusinessService("Demo.StockService", .service)
@@ -115,6 +154,8 @@ ClassMethod Reset()
     do ##class(EnsLib.Workflow.TaskResponse).%KillExtent()
     do ##class(Ens.MessageHeader).Purge(.deleted, 0, 0, 1)
     do ##class(Ens.Util.Log).Purge(.deleted, 0)
+    // The failed message watch starts again from the new messages.
+    kill ^Triage.Watch
     do ##class(Ens.Director).StartProduction(##class(Triage.Setup).#PRODUCTION)
     kill ^Triage.Demo, ^Triage.Resend
     do ##class(Triage.Demo.ERPOrder).%KillExtent()

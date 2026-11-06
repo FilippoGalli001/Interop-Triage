@@ -3,6 +3,7 @@
 The details behind the [README](../README.md).
 
 - [Native Retries First](#native-retries-first)
+- [Failures Without an Alert](#failures-without-an-alert)
 - [Governance Rules](#governance-rules)
 - [Production Settings](#production-settings)
 - [Agent Tools and Prompt Safety](#agent-tools-and-prompt-safety)
@@ -27,6 +28,17 @@ The details behind the [README](../README.md).
 In an early prototype the outage was simulated by pointing `Demo.ERP` to `localhost:1`. The agent called `get_component_settings`, compared `localhost:1` with the configured `HTTPPort`, and escalated: *"misconfigured endpoint rather than a transient outage"*. It was right, so the demo now uses a real `502` from a gateway.
 
 `TriageProcess` is an ObjectScript `Ens.BusinessProcess` rather than BPL: it is generic infrastructure behind `Ens.Alert` that opens whatever message class failed, locks per error signature for coalescing and evaluates proposals with unit-tested rules. The operator still sees every step in the Visual Trace.
+
+## Failures Without an Alert
+
+Only a component with `AlertOnError` on sends its failures to `Ens.Alert`, and the setting is off by default. `Triage.FailedMessageWatch` is a business service on a custom inbound adapter, `Triage.Adapter.FailedMessageAdapter` (`Ens.InboundAdapter`). Every `CallInterval` (5 s) it looks for requests in `Ens.MessageHeader` with status `Error` that were not reported:
+
+- **Older than `MinAge`** (10 s), so a component with `AlertOnError` has already sent its alert.
+- **No `Ens.AlertRequest`** from that component in the session after the failure, and no incident already on that header. A failure reported by an alert is left to the alert path, so nothing is triaged twice.
+- **Not a triage component and not `Ens.*`**, so the triage never loops on its own failures. `Components` limits the watch to a list.
+- **Only messages after the first poll.** Older failures are history, not news, and `MaxPerPoll` (5) caps each poll; `MaxAgentRunsPerMinute` still applies.
+
+For each one, the service sends `Ens.Alert` the `Ens.AlertRequest` the component would have sent, in the session of the failed message. Its text is the error the component logged in the event log for that header, the same text an alert carries. The error signature is therefore the same too, so coalescing and replay recordings work as on the alert path. `Triage.Test.WatchTest` checks all of this on headers it writes and deletes; `Scenarios.RunSilent()` shows it in the demo.
 
 ## Governance Rules
 
@@ -169,7 +181,7 @@ With Gemini's free tier (20 requests a day per model) use **Quick demo**: a full
 
 ## Tests
 
-`Triage.Test.PolicyTest` has 79 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), the tool-call trace, error signatures, secret redaction, session isolation, replay mode, operator patches and the MCP note requirement.
+`Triage.Test.PolicyTest` has 97 `%UnitTest` assertions: policy outcomes, patch validation, protected fields, retry delays and `Retry-After` (seconds or HTTP date), the tool-call trace, error signatures, secret redaction, session isolation, prompt injection, replay mode, operator patches and the MCP note requirement. `Triage.Test.WatchTest` has 19 more on the failed message watch: which components are watched, `MinAge`, a failure reported once, a failure with an alert left to the alert path, and the alert text taken from the event log.
 
 ```bash
 docker exec -it iris-triage iris session IRIS -U TRIAGE "##class(Triage.Setup).RunTests()"
@@ -183,7 +195,7 @@ The output ends with `All PASSED`.
 
 1. Load `src/Triage` into your namespace (the `Demo` package is optional), index the runbooks with `do ##class(Triage.Knowledge.Base).LoadRunbooks("<path>/runbooks")`, and set the `LLM_*` variables for the IRIS process.
 2. Add `Triage.Production.TriageProcess` named **`Ens.Alert`**, plus `Triage.Production.AgentOperation` (`Triage.AgentOperation`), `Triage.Production.EscalationOperation` (`Triage.EscalationOperation`), `Triage.Service.ReviewService` (`Triage.ReviewService`), `Ens.Alarm`, and optionally `EnsLib.Workflow.Operation` (`Triage.Operators`, see `Triage.Setup.CreateWorkflowRole`).
-3. Set `AlertOnError = 1` on the operations to watch (and `AlertRetryGracePeriod` if they use `FailureTimeout`).
+3. Set `AlertOnError = 1` on the operations to watch (and `AlertRetryGracePeriod` if they use `FailureTimeout`), or add `Triage.Service.FailedMessageWatch` (`Triage.FailedMessageWatch`), which reports the failures of components without alerts. Both can run together.
 4. Choose `AutoFixFields` and `ProtectedFields` for your data.
 
 ## Reviews From the Terminal
@@ -203,7 +215,7 @@ do ##class(Triage.Service.ReviewService).Resolve(incidentId, "Renewed the API to
 do ##class(Triage.Demo.Scenarios).Report()
 ```
 
-The demos also run from the terminal: `do ##class(Triage.Demo.Scenarios).RunQuick()`, `.Run()` and `.RunFollowUp()`.
+The demos also run from the terminal: `do ##class(Triage.Demo.Scenarios).RunQuick()`, `.Run()`, `.RunFollowUp()` and `.RunSilent()` (failures without an alert).
 
 ## Repository Layout
 
@@ -215,10 +227,11 @@ src/Triage/            ObjectScript package loaded into namespace TRIAGE
   Data/                Incident, ToolCallLog, Recording (replay storage)
   Knowledge/           Base (%AI.RAG.KnowledgeBase setup and indexing), Runbook
   MCP/                 Service (%AI.MCP.Service), Tools, OperatorPolicy, AuditPolicy
-  Service/             ReviewService (human reviews as steps of the production)
+  Service/             ReviewService (human reviews as steps of the production), FailedMessageWatch
+  Adapter/             FailedMessageAdapter (Ens.InboundAdapter: failed messages that raised no alert)
   API/REST.cls         REST API behind the dashboard (/triage/api)
   Demo/                InboundService, ERP and WMS operations, MockAPI, messages, Scenarios
-  Test/PolicyTest.cls  %UnitTest suite (97 assertions)
+  Test/                %UnitTest suites PolicyTest and WatchTest (116 assertions)
   Setup.cls, Util.cls  Build-time setup, test runner, introspection helpers
 runbooks/              Ten Markdown runbooks, indexed with FastEmbed at build time
 recordings/            decisions.json, the recorded live runs used by replay mode
