@@ -367,21 +367,37 @@ function renderDetail(inc) {
   $("detail").replaceChildren(el("div", { class: "detail" }, parts));
 }
 
+// What was last drawn: the refresh redraws only what changed, so a text selection or an open
+// tool call is not lost every two seconds.
+const drawn = {};
+function changed(key, data) {
+  const json = JSON.stringify(data);
+  if (drawn[key] === json) return false;
+  drawn[key] = json;
+  return true;
+}
+
 async function select(id) {
   selected = id;
   form = null;
-  try { renderDetail(await api("/incidents/" + id)); } catch (e) { $("detail").replaceChildren(el("div", { class: "empty err" }, e.message)); }
+  try { const inc = await api("/incidents/" + id); drawn.detail = JSON.stringify(inc); renderDetail(inc); }
+  catch (e) { drawn.detail = null; $("detail").replaceChildren(el("div", { class: "empty err" }, e.message)); }
   document.querySelectorAll("#rows tr").forEach((tr) => tr.classList.toggle("sel", tr.firstChild.textContent.startsWith(String(id))));
 }
 
 async function refresh() {
   try {
     const [stats, list] = await Promise.all([api("/stats"), api("/incidents")]);
-    renderTiles(stats); renderRows(list);
+    // While the operator selects text, nothing is redrawn: the next refresh after it catches up.
+    const selecting = String(window.getSelection() || "") !== "";
+    if (!selecting) {
+      if (changed("tiles", stats)) renderTiles(stats);
+      if (changed("rows", [list, selected])) renderRows(list);
+    }
     // Do not redraw the detail while the operator is typing, or has input not sent yet (unless the incident moved on).
-    if (selected && !(document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName))) {
-      const inc = await api("/incidents/" + selected);
-      if (!(form && form.dirty() && form.status === inc.status)) renderDetail(inc);
+    if (selected && !selecting && !(document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName))) {
+      const inc = await api("/incidents/" + selected), json = JSON.stringify(inc);
+      if (json !== drawn.detail && !(form && form.dirty() && form.status === inc.status)) { drawn.detail = json; renderDetail(inc); }
     }
     $("status").textContent = "updated " + new Date().toLocaleTimeString();
   } catch (e) { $("status").textContent = "API error: " + e.message; }
