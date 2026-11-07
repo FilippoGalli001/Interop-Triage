@@ -195,7 +195,8 @@ Where each [technology bonus](https://community.intersystems.com/node/586773) is
 | Bugs in AI Hub | 2 + 1 | [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13) (`iris-mcp-server`, still on build 109), [#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14) (`call.arguments` type in policies) |
 | Bugs in Embedded Python | 2 + 1 | [python-bugreports#28](https://github.com/intersystems-community/python-bugreports/issues/28) (`False` to a `%Boolean` argument), [#29](https://github.com/intersystems-community/python-bugreports/issues/29) (`None` subscripts in `iris.gref`) |
 | Article on Developer Community | 2 | [The AI Proposes, the Code Decides: Building a Governed Triage Agent for IRIS Interoperability on AI Hub](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) |
-| Video on YouTube | 3 | [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) |
+| Video | 3 | [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc), or [download the MP4](https://github.com/FilippoGalli001/Interop-Triage/releases/download/media-v1/Interop-Triage-demo.mp4) |
+| Questionnaire | 1 | filled in on November 1 |
 
 ---
 
