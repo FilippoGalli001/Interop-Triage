@@ -182,7 +182,7 @@ Embedded Python on the same build: a Python `False` passed to an ObjectScript `%
 
 ## Contest Bonuses
 
-Where each [technology bonus](https://community.intersystems.com/node/586773) is in the project. Whether it counts is up to the organizers.
+Where each [technology bonus](https://community.intersystems.com/post/technology-bonuses-intersystems-programming-contest-ai-agents-interoperability-workflows) is in the project. Whether it counts is up to the organizers.
 
 | Bonus | Points | Where |
 | --- | --- | --- |
