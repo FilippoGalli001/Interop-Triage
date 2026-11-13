@@ -19,7 +19,7 @@ A component sends that alert only with `AlertOnError` on, and it is off by defau
 
 The agent cannot change or resend anything itself. Deterministic, unit-tested rules (`Triage.Policy`) decide whether a proposal runs at once, waits for an operator, or is escalated. Operators review from a dashboard served by IRIS or from their own AI assistant over MCP.
 
-**Demo video:** [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) · **Article:** [Developer Community](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) · **Open Exchange:** [Interop-Triage](https://openexchange.intersystems.com/package/Interop-Triage)
+**Demo video:** [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc) · **Articles:** [design](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub), [held-out evaluation](https://community.intersystems.com/post/testing-ai-triage-agent-failures-it-has-never-seen-held-out-evaluation-prompt-injection-and) · **Open Exchange:** [Interop-Triage](https://openexchange.intersystems.com/package/Interop-Triage)
 
 ---
 
@@ -194,7 +194,7 @@ Where each [technology bonus](https://community.intersystems.com/post/technology
 | Community Idea [DPI-I-689](https://ideas.intersystems.com/ideas/DPI-I-689) | 4 | the agent's step in the Visual Trace carries model, tokens, duration and every tool call: [Triage/Msg/TriageDecision.cls](https://github.com/FilippoGalli001/Interop-Triage/blob/main/src/Triage/Msg/TriageDecision.cls), steps in [The LLM Pipeline in the Visual Trace](#the-llm-pipeline-in-the-visual-trace) |
 | Bugs in AI Hub | 2 + 1 | [ai-hub-eap-bugreports#13](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/13) (`iris-mcp-server`, still on build 109), [#14](https://github.com/intersystems-community/ai-hub-eap-bugreports/issues/14) (`call.arguments` type in policies) |
 | Bugs in Embedded Python | 2 + 1 | [python-bugreports#28](https://github.com/intersystems-community/python-bugreports/issues/28) (`False` to a `%Boolean` argument), [#29](https://github.com/intersystems-community/python-bugreports/issues/29) (`None` subscripts in `iris.gref`) |
-| Article on Developer Community | 2 | [The AI Proposes, the Code Decides: Building a Governed Triage Agent for IRIS Interoperability on AI Hub](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub) |
+| Articles on Developer Community | 2 + 1 | [The AI Proposes, the Code Decides: Building a Governed Triage Agent for IRIS Interoperability on AI Hub](https://community.intersystems.com/post/ai-proposes-code-decides-building-governed-triage-agent-iris-interoperability-ai-hub), [Testing an AI Triage Agent on Failures It Has Never Seen](https://community.intersystems.com/post/testing-ai-triage-agent-failures-it-has-never-seen-held-out-evaluation-prompt-injection-and) |
 | Video | 3 | [youtu.be/26HSLGr6XHc](https://youtu.be/26HSLGr6XHc), or [download the MP4](https://github.com/FilippoGalli001/Interop-Triage/releases/download/media-v1/Interop-Triage-demo.mp4) |
 | Questionnaire | 1 | filled in on November 1 |
 
